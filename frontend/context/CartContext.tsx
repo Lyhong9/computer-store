@@ -24,6 +24,7 @@ interface CartContextType {
     shippingAddress: string;
     paymentMethod: string;
   }) => Order;
+  addCompletedOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order["status"]) => void;
 }
 
@@ -244,6 +245,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return newOrder;
   };
 
+  const addCompletedOrder = (order: Order) => {
+    setOrders((prev) => {
+      const filtered = prev.filter((o) => o.id !== order.id);
+      return [order, ...filtered];
+    });
+  };
+
   const updateOrderStatus = (orderId: string, status: Order["status"]) => {
     setOrders((prev) =>
       prev.map((order) => (order.id === orderId ? { ...order, status } : order))
@@ -267,6 +275,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setIsCartOpen,
         orders,
         placeOrder,
+        addCompletedOrder,
         updateOrderStatus,
       }}
     >

@@ -53,9 +53,25 @@ public class PaymentService {
         this.paymentProperties = paymentProperties;
     }
 
+    private CustomerOrder findOrder(String orderRef) {
+        if (orderRef == null || orderRef.isBlank()) {
+            throw new IllegalArgumentException("Order reference cannot be empty");
+        }
+        Optional<CustomerOrder> byNumber = orderRepository.findByOrderNumber(orderRef.trim());
+        if (byNumber.isPresent()) {
+            return byNumber.get();
+        }
+        try {
+            Long id = Long.parseLong(orderRef.trim());
+            return orderRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found with ref: " + orderRef));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Order not found with ref: " + orderRef);
+        }
+    }
+
     public BakongQrResponse generateBakongQr(String orderNumber) {
-        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found with number: " + orderNumber));
+        CustomerOrder order = findOrder(orderNumber);
 
         PaymentProperties.BakongProperties bakongProps = paymentProperties.getBakong();
 
@@ -102,8 +118,7 @@ public class PaymentService {
     }
 
     public PaymentVerificationResponse verifyBakongPayment(String orderNumber, String md5Hash) {
-        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderNumber));
+        CustomerOrder order = findOrder(orderNumber);
 
         if (order.getPaymentStatus() == PaymentStatus.PAID) {
             return new PaymentVerificationResponse(
@@ -174,8 +189,7 @@ public class PaymentService {
     }
 
     public AbaPaywayService.AbaCheckoutPayload createAbaCheckout(String orderNumber, String paymentOption, String frontendBaseUrl) {
-        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderNumber));
+        CustomerOrder order = findOrder(orderNumber);
 
         List<Map<String, Object>> items = new ArrayList<>();
         if (order.getItems() != null) {
@@ -219,8 +233,7 @@ public class PaymentService {
     }
 
     public PaymentVerificationResponse verifyAbaPayment(String orderNumber) {
-        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderNumber));
+        CustomerOrder order = findOrder(orderNumber);
 
         if (order.getPaymentStatus() == PaymentStatus.PAID) {
             return new PaymentVerificationResponse(
@@ -267,35 +280,45 @@ public class PaymentService {
     }
 
     public PaymentVerificationResponse simulatePaymentSuccess(String orderNumber, String gateway) {
-        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderNumber));
-
         String selectedGateway = (gateway != null && !gateway.isBlank()) ? gateway.toUpperCase() : "BAKONG_KHQR";
         String mockTx = "SIMULATED-" + selectedGateway + "-" + System.currentTimeMillis();
 
-        markOrderPaid(order, selectedGateway, mockTx, "{\"simulated\": true, \"note\": \"Dev test confirmation\"}");
+        try {
+            CustomerOrder order = findOrder(orderNumber);
+            markOrderPaid(order, selectedGateway, mockTx, "{\"simulated\": true, \"note\": \"Dev test confirmation\"}");
 
-        PaymentTransaction transaction = new PaymentTransaction();
-        transaction.setTransactionId(mockTx);
-        transaction.setOrderNumber(order.getOrderNumber());
-        transaction.setPaymentGateway(selectedGateway);
-        transaction.setAmount(order.getTotal());
-        transaction.setCurrency("USD");
-        transaction.setStatus(PaymentStatus.PAID);
-        transaction.setGatewayRef(mockTx);
-        transaction.setRawResponse("{\"simulated\": true}");
-        transactionRepository.save(transaction);
+            PaymentTransaction transaction = new PaymentTransaction();
+            transaction.setTransactionId(mockTx);
+            transaction.setOrderNumber(order.getOrderNumber());
+            transaction.setPaymentGateway(selectedGateway);
+            transaction.setAmount(order.getTotal());
+            transaction.setCurrency("USD");
+            transaction.setStatus(PaymentStatus.PAID);
+            transaction.setGatewayRef(mockTx);
+            transaction.setRawResponse("{\"simulated\": true}");
+            transactionRepository.save(transaction);
 
-        log.info("Simulated payment success for order {} via {}", orderNumber, selectedGateway);
+            log.info("Simulated payment success for order {} via {}", orderNumber, selectedGateway);
 
-        return new PaymentVerificationResponse(
-                order.getOrderNumber(),
-                true,
-                PaymentStatus.PAID,
-                selectedGateway,
-                mockTx,
-                "Test payment successfully confirmed!"
-        );
+            return new PaymentVerificationResponse(
+                    order.getOrderNumber(),
+                    true,
+                    PaymentStatus.PAID,
+                    selectedGateway,
+                    mockTx,
+                    "Test payment successfully confirmed!"
+            );
+        } catch (Exception e) {
+            log.warn("Simulate payment for unpersisted order {}: {}", orderNumber, e.getMessage());
+            return new PaymentVerificationResponse(
+                    orderNumber != null ? orderNumber : "SIM-" + System.currentTimeMillis(),
+                    true,
+                    PaymentStatus.PAID,
+                    selectedGateway,
+                    mockTx,
+                    "Test payment successfully confirmed (sandbox fallback)!"
+            );
+        }
     }
 
     private void markOrderPaid(CustomerOrder order, String gateway, String transactionRef, String details) {

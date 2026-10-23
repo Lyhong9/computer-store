@@ -149,9 +149,9 @@ export function DigitaxDealsAndProducts({
 
       {/* 2. Bottom 6 Products Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {bottomProducts.map((p) => (
+        {bottomProducts.map((p, idx) => (
           <ProductCardCompact
-            key={p.id}
+            key={`${p.id}-${p.sku || idx}`}
             product={p}
             onQuickView={onQuickView}
             onAddToCart={addToCart}

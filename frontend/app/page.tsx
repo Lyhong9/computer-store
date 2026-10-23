@@ -77,10 +77,18 @@ export default async function Home() {
           };
         });
 
-        // Combine backend products with mockup showcase items
+        // Combine backend products with mockup showcase items with guaranteed unique IDs
+        const existingBackendIds = new Set(mappedBackend.map((b: any) => Number(b.id)));
+        let nextUniqueId = 5000;
         const missingSamples = INITIAL_PRODUCTS.filter(
           (s) => !mappedBackend.some((b: any) => b.sku === s.sku)
-        );
+        ).map((s) => {
+          if (existingBackendIds.has(Number(s.id))) {
+            nextUniqueId += 1;
+            return { ...s, id: nextUniqueId };
+          }
+          return s;
+        });
         products = [...mappedBackend, ...missingSamples];
         isBackendConnected = true;
       }

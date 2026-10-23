@@ -122,7 +122,7 @@ export function CheckoutModal({
 
   return (
     <>
-      {isOpen && (
+      {isOpen && !showBakongModal && !showAbaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
           <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
 
@@ -360,6 +360,7 @@ export function CheckoutModal({
         order={pendingOrder}
         onClose={() => {
           setShowBakongModal(false);
+          onClose();
           if (pendingOrder) onOrderSuccess(pendingOrder);
         }}
         onPaymentSuccess={handlePaymentCompleted}
@@ -371,6 +372,7 @@ export function CheckoutModal({
         order={pendingOrder}
         onClose={() => {
           setShowAbaModal(false);
+          onClose();
           if (pendingOrder) onOrderSuccess(pendingOrder);
         }}
         onPaymentSuccess={handlePaymentCompleted}

@@ -27,6 +27,9 @@ import { productsApi, categoriesApi, ordersApi } from "@/services/api";
 import { INITIAL_PRODUCTS, CATEGORIES } from "@/data/sampleProducts";
 import { BakongKhqrModal } from "@/components/BakongKhqrModal";
 import { AbaPaywayModal } from "@/components/AbaPaywayModal";
+import { PosReceiptModal } from "@/components/dashboard/PosReceiptModal";
+import { useCart } from "@/context/CartContext";
+import { playScanBeepSound, playPaymentSuccessSound } from "@/lib/sound";
 
 interface PosCartItem {
   product: Product;
@@ -35,6 +38,7 @@ interface PosCartItem {
 }
 
 export function DashboardPosTab() {
+  const { addCompletedOrder } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -46,6 +50,7 @@ export function DashboardPosTab() {
   const [activePaymentOrder, setActivePaymentOrder] = useState<Order | null>(null);
   const [showBakongModal, setShowBakongModal] = useState<boolean>(false);
   const [showAbaModal, setShowAbaModal] = useState<boolean>(false);
+  const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
   const [lastCompletedOrder, setLastCompletedOrder] = useState<Order | null>(null);
   const [cashierName, setCashierName] = useState<string>("Dam Lyhong (Cashier #01)");
 
@@ -112,6 +117,7 @@ export function DashboardPosTab() {
 
   // Cart operations
   const addToPosCart = (product: Product) => {
+    playScanBeepSound();
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -153,6 +159,33 @@ export function DashboardPosTab() {
   const resetOrder = () => {
     setCart([]);
     setDiscountPercent(0);
+  };
+
+  // Decrement product inventory locally
+  const deductLocalStock = (purchasedItems: PosCartItem[]) => {
+    setProducts((prev) =>
+      prev.map((p) => {
+        const item = purchasedItems.find((i) => i.product.id === p.id);
+        if (item) {
+          return {
+            ...p,
+            quantityOnHand: Math.max(0, (p.quantityOnHand || 0) - item.quantity),
+          };
+        }
+        return p;
+      })
+    );
+
+    // Also refresh from backend in background
+    setTimeout(() => {
+      productsApi
+        .getAll()
+        .then((data) => {
+          const list = Array.isArray(data) ? data : (data as any)?.content || [];
+          if (list.length > 0) setProducts(list);
+        })
+        .catch(() => {});
+    }, 1200);
   };
 
   // Calculations
@@ -215,7 +248,11 @@ export function DashboardPosTab() {
         setShowAbaModal(true);
       } else {
         // Cash payment instant complete
+        deductLocalStock(cart);
+        playPaymentSuccessSound();
+        addCompletedOrder(formatted);
         setLastCompletedOrder(formatted);
+        setShowReceiptModal(true);
         resetOrder();
       }
     } catch (err) {
@@ -247,17 +284,25 @@ export function DashboardPosTab() {
         setActivePaymentOrder(mockOrder);
         setShowAbaModal(true);
       } else {
+        deductLocalStock(cart);
+        playPaymentSuccessSound();
+        addCompletedOrder(mockOrder);
         setLastCompletedOrder(mockOrder);
+        setShowReceiptModal(true);
         resetOrder();
       }
     }
   };
 
   const handlePaymentSuccess = (confirmed: Order) => {
+    // Deduct stock in real-time
+    deductLocalStock(cart);
+    addCompletedOrder(confirmed);
     setShowBakongModal(false);
     setShowAbaModal(false);
     setActivePaymentOrder(null);
     setLastCompletedOrder(confirmed);
+    setShowReceiptModal(true);
     resetOrder();
   };
 
@@ -690,15 +735,19 @@ export function DashboardPosTab() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => setShowReceiptModal(true)}
               className="px-4 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-200 hover:bg-emerald-100 flex items-center gap-1.5 shadow-xs"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print Receipt</span>
+              <span>View / Print Receipt</span>
             </button>
             <button
               type="button"
-              onClick={() => setLastCompletedOrder(null)}
+              onClick={() => {
+                setLastCompletedOrder(null);
+                setShowReceiptModal(false);
+                resetOrder();
+              }}
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs"
             >
               Done / Next Customer
@@ -726,6 +775,19 @@ export function DashboardPosTab() {
           setActivePaymentOrder(null);
         }}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* 5. Thermal POS Receipt Modal */}
+      <PosReceiptModal
+        isOpen={showReceiptModal}
+        order={lastCompletedOrder}
+        cashierName={cashierName}
+        onClose={() => setShowReceiptModal(false)}
+        onNewTransaction={() => {
+          setShowReceiptModal(false);
+          setLastCompletedOrder(null);
+          resetOrder();
+        }}
       />
     </div>
   );

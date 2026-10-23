@@ -39,15 +39,18 @@ public class KhqrGenerator {
     ) {
         StringBuilder sb = new StringBuilder();
 
-        // 00: Payload Format Indicator
+        // 00: Payload Format Indicator (Version 01)
         sb.append(tlv("00", "01"));
 
-        // 01: Point of Initiation Method (12 = Dynamic QR code)
+        // 01: Point of Initiation Method (12 = Dynamic QR code, 11 = Static QR)
         sb.append(tlv("01", "12"));
 
-        // 29: Merchant Account Information (Bakong individual)
+        // 29: Merchant Account Information (Bakong Individual / National Switch)
         // Sub-tag 00: Bakong account identifier (e.g. dam_lyhong@bkrt)
-        String sub29 = tlv("00", accountId != null ? accountId : "dam_lyhong@bkrt");
+        // Sub-tag 02: Acquiring Bank (e.g. Bakong)
+        String accId = (accountId != null && !accountId.isBlank()) ? accountId : "dam_lyhong@bkrt";
+        String acquiringBank = "Bakong";
+        String sub29 = tlv("00", accId) + tlv("02", acquiringBank);
         sb.append(tlv("29", sub29));
 
         // 52: Merchant Category Code (5999 = Miscellaneous Retail)
@@ -63,7 +66,7 @@ public class KhqrGenerator {
             sb.append(tlv("54", formattedAmount));
         }
 
-        // 58: Country Code
+        // 58: Country Code (KH)
         sb.append(tlv("58", "KH"));
 
         // 59: Merchant Name
@@ -85,11 +88,17 @@ public class KhqrGenerator {
         if (storeLabel != null && !storeLabel.isBlank()) {
             sub62.append(tlv("03", storeLabel)); // Store Label
         }
-        sub62.append(tlv("07", "WEB")); // Terminal Label
+        sub62.append(tlv("07", "POS-01")); // Terminal Label
 
         if (!sub62.isEmpty()) {
             sb.append(tlv("62", sub62.toString()));
         }
+
+        // 99: Timestamp field (MANDATORY for Bakong Dynamic QR: Tag 00=Creation, Tag 01=Expiration in millis)
+        long nowMillis = System.currentTimeMillis();
+        long expireMillis = nowMillis + 15 * 60 * 1000L; // 15 minutes expiration
+        String sub99 = tlv("00", String.valueOf(nowMillis)) + tlv("01", String.valueOf(expireMillis));
+        sb.append(tlv("99", sub99));
 
         // 63: CRC16 Checksum prefix
         sb.append("6304");
@@ -101,8 +110,8 @@ public class KhqrGenerator {
         // MD5 hash of the full KHQR string (used by Bakong Open API verification)
         String md5 = calculateMd5(fullKhqr);
 
-        // Render QR Code image
-        String imageBase64 = renderQrCodeImage(fullKhqr, 400);
+        // Render QR Code image with Level H (30% error recovery) for flawless phone scanning
+        String imageBase64 = renderQrCodeImage(fullKhqr, 450);
 
         return new KhqrResult(fullKhqr, md5, imageBase64);
     }
@@ -149,7 +158,7 @@ public class KhqrGenerator {
             Map<EncodeHintType, Object> hints = new HashMap<>();
             hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
             hints.put(EncodeHintType.MARGIN, 1);
-            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
+            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
 
             BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, size, size, hints);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

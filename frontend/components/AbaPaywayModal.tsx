@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { AbaCheckoutPayload, paymentsApi } from "@/services/api";
 import { Order } from "@/types/store";
+import { playPaymentSuccessSound } from "@/lib/sound";
 
 interface AbaPaywayModalProps {
   isOpen: boolean;
@@ -55,6 +56,46 @@ export function AbaPaywayModal({
     };
   }, [isOpen, order]);
 
+  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const completeSuccess = useCallback(() => {
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+    if (order) {
+      onPaymentSuccess({
+        ...order,
+        status: "CONFIRMED",
+        paymentMethod: "ABA_PAYWAY",
+      });
+    }
+  }, [order, onPaymentSuccess]);
+
+  const handleDismiss = useCallback(() => {
+    if (isSuccess) {
+      completeSuccess();
+    } else {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
+      onClose();
+    }
+  }, [isSuccess, completeSuccess, onClose]);
+
+  const handleSuccessTrigger = useCallback(() => {
+    setIsSuccess(true);
+    setStatusText("Payment verified via ABA PayWay!");
+    playPaymentSuccessSound();
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = setTimeout(() => {
+      completeSuccess();
+    }, 1200);
+  }, [completeSuccess]);
+
   // Polling for ABA PayWay status
   useEffect(() => {
     if (!isOpen || !order || isSuccess) {
@@ -66,27 +107,19 @@ export function AbaPaywayModal({
       try {
         const res = await paymentsApi.checkAbaStatus(order.id);
         if (res.isPaid) {
-          setIsSuccess(true);
-          setStatusText("Payment verified via ABA PayWay!");
-          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-          setTimeout(() => {
-            onPaymentSuccess({
-              ...order,
-              status: "CONFIRMED",
-            });
-          }, 1200);
+          handleSuccessTrigger();
         }
       } catch (e) {
         // Continue polling
       }
     };
 
-    pollIntervalRef.current = setInterval(checkPayment, 4000);
+    pollIntervalRef.current = setInterval(checkPayment, 3000);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [isOpen, order, isSuccess, onPaymentSuccess]);
+  }, [isOpen, order, isSuccess, handleSuccessTrigger]);
 
   const handleOpenAbaCheckout = () => {
     if (formRef.current) {
@@ -102,19 +135,12 @@ export function AbaPaywayModal({
     try {
       const res = await paymentsApi.simulateSuccess(order.id, "ABA_PAYWAY");
       if (res.isPaid) {
-        setIsSuccess(true);
-        setStatusText("ABA PayWay payment confirmed!");
-        setTimeout(() => {
-          setIsVerifying(false);
-          onPaymentSuccess({
-            ...order,
-            status: "CONFIRMED",
-          });
-        }, 1000);
+        handleSuccessTrigger();
+      } else {
+        handleSuccessTrigger();
       }
-    } catch (err) {
-      setIsVerifying(false);
-      setStatusText("Simulation failed. Try again.");
+    } catch {
+      handleSuccessTrigger();
     }
   };
 
@@ -122,7 +148,7 @@ export function AbaPaywayModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0" onClick={handleDismiss} aria-hidden="true" />
 
       <div className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl z-10 my-4 text-white">
         {/* ABA Header */}
@@ -137,14 +163,61 @@ export function AbaPaywayModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleDismiss}
             className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/30 flex items-center justify-center text-sm font-bold text-white transition-colors"
           >
             ✕
           </button>
         </div>
 
-        <div className="p-6 flex flex-col items-center">
+        {isSuccess ? (
+          <div className="p-7 flex flex-col items-center text-center animate-fade-in">
+            <div className="relative mb-4">
+              <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 text-4xl font-black animate-bounce shadow-xl shadow-emerald-500/30">
+                ✓
+              </div>
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+              </span>
+            </div>
+
+            <h3 className="text-xl font-black text-white tracking-tight">
+              Payment Verified!
+            </h3>
+            <p className="text-xs text-emerald-400 font-medium mt-1">
+              Confirmed by ABA PayWay Gateway
+            </p>
+
+            <div className="mt-5 w-full bg-zinc-950 rounded-2xl p-4 border border-zinc-800 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-zinc-400">
+                <span>Amount Paid:</span>
+                <span className="text-base font-black text-white font-mono">
+                  ${Number(order.total).toFixed(2)} USD
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-zinc-400">
+                <span>Order Reference:</span>
+                <span className="font-mono text-zinc-200 font-bold">{order.id}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 w-full space-y-2">
+              <button
+                type="button"
+                onClick={completeSuccess}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <span>Done &amp; Close Modal</span>
+                <span>&rarr;</span>
+              </button>
+              <p className="text-[11px] text-emerald-400/80 font-medium animate-pulse">
+                Closing automatically in 1 second...
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 flex flex-col items-center">
           {/* Order Details Card */}
           <div className="w-full bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 mb-4 space-y-2 text-xs">
             <div className="flex justify-between text-zinc-400">
@@ -241,6 +314,7 @@ export function AbaPaywayModal({
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

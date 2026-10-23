@@ -342,9 +342,9 @@ export function DigitaxShopView({
                 : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             }`}
           >
-            {paginatedProducts.map((p) => (
+            {paginatedProducts.map((p, idx) => (
               <div
-                key={p.id}
+                key={`${p.id}-${p.sku || idx}`}
                 className="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between hover:shadow-xl transition-all duration-300 group relative"
               >
                 {/* Badges */}
