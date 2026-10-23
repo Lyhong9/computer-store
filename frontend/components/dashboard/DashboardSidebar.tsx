@@ -21,12 +21,14 @@ import {
   PanelLeftClose,
   PanelLeft,
   Sparkles,
+  Calculator,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export type DashboardSection =
   | "dashboard"
+  | "pos"
   | "orders"
   | "products"
   | "categories"
@@ -59,6 +61,7 @@ export function DashboardSidebar({
 
   const mainNav = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "pos", label: "POS Terminal", icon: Calculator, badge: "POS" },
     { id: "orders", label: "Orders", icon: ShoppingBag, badge: orderCount },
     { id: "products", label: "Products", icon: Package },
     { id: "categories", label: "Categories", icon: FolderTree },

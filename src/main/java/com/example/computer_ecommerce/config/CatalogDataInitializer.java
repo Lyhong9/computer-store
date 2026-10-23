@@ -80,69 +80,70 @@ public class CatalogDataInitializer {
                     categories.put(entry.getKey(), cat);
                 }
 
-                // 3. Seed Products with rich media, deals, and ratings
+                // 3. Seed Products with rich media, deals, and ratings (Set to $0.10 for real payment testing)
                 seedProduct(productRepo, "MBP-16-M3MAX", "MacBook Pro 16\" M3 Max",
                         "16-core CPU, 40-core GPU, 48GB Unified Memory, 1TB SSD Liquid Retina XDR display.",
-                        new BigDecimal("3499.00"), new BigDecimal("3899.00"),
+                        new BigDecimal("0.10"), new BigDecimal("3899.00"),
                         "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80"),
                         true, "HOT", new BigDecimal("5.0"), 48, 15, categories.get("Laptops"), brands.get("Apple"));
 
                 seedProduct(productRepo, "ASUS-G16-4080", "ASUS ROG Zephyrus G16",
                         "Intel Core Ultra 9 185H, RTX 4080 12GB, 32GB DDR5, 1TB NVMe, 2.5K 240Hz OLED.",
-                        new BigDecimal("2499.99"), new BigDecimal("2799.00"),
+                        new BigDecimal("0.10"), new BigDecimal("2799.00"),
                         "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800&q=80"),
                         true, "SALE", new BigDecimal("4.9"), 36, 20, categories.get("Laptops"), brands.get("ASUS ROG"));
 
                 seedProduct(productRepo, "RTX-4090-ROG", "ASUS ROG Strix GeForce RTX 4090 OC",
                         "24GB GDDR6X, Ada Lovelace architecture, DLSS 3, Axial-tech fans, diecast frame.",
-                        new BigDecimal("1999.00"), new BigDecimal("2299.00"),
+                        new BigDecimal("0.10"), new BigDecimal("2299.00"),
                         "https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&q=80"),
                         true, "HOT", new BigDecimal("5.0"), 82, 8, categories.get("Graphics Cards"), brands.get("ASUS ROG"));
 
                 seedProduct(productRepo, "RTX-4070TI-SUPER", "NVIDIA GeForce RTX 4070 Ti SUPER Founders",
                         "16GB GDDR6X, 8448 CUDA Cores, Dual BIOS, AV1 Encode, 3rd Gen RT Cores.",
-                        new BigDecimal("849.99"), new BigDecimal("899.99"),
+                        new BigDecimal("0.10"), new BigDecimal("899.99"),
                         "https://images.unsplash.com/photo-1587202372634-32705e3bf49c?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1587202372634-32705e3bf49c?w=800&q=80"),
                         false, "NEW", new BigDecimal("4.8"), 29, 25, categories.get("Graphics Cards"), brands.get("NVIDIA"));
 
                 seedProduct(productRepo, "AMD-7950X3D", "AMD Ryzen 9 7950X3D Desktop Processor",
                         "16 Cores, 32 Threads, 144MB 3D V-Cache, up to 5.7GHz Max Boost, AM5 Socket.",
-                        new BigDecimal("599.00"), new BigDecimal("699.00"),
+                        new BigDecimal("0.10"), new BigDecimal("699.00"),
                         "https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800&q=80"),
                         true, "SALE", new BigDecimal("4.9"), 64, 30, categories.get("Processors"), brands.get("AMD"));
 
                 seedProduct(productRepo, "INTEL-14900K", "Intel Core i9-14900K Desktop Processor",
                         "24 Cores (8P + 16E), 32 Threads, up to 6.0GHz Turbo, LGA1700 Socket.",
-                        new BigDecimal("549.99"), new BigDecimal("599.99"),
+                        new BigDecimal("0.10"), new BigDecimal("599.99"),
                         "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80"),
                         false, null, new BigDecimal("4.7"), 41, 35, categories.get("Processors"), brands.get("Intel"));
 
                 seedProduct(productRepo, "DELL-U3223QE", "Dell UltraSharp 32\" 4K USB-C Hub Monitor",
                         "IPS Black technology, 3840x2160 4K UHD, 98% DCI-P3, 90W Power Delivery, KVM.",
-                        new BigDecimal("799.99"), new BigDecimal("899.99"),
+                        new BigDecimal("0.10"), new BigDecimal("899.99"),
                         "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80"),
                         true, "HOT", new BigDecimal("4.9"), 53, 18, categories.get("Monitors"), brands.get("Dell"));
 
                 seedProduct(productRepo, "LOGI-GPRO-X2", "Logitech G PRO X SUPERLIGHT 2 Mouse",
                         "HERO 2 Sensor 32,000 DPI, LIGHTFORCE Switches, 60g ultralight, 95h battery.",
-                        new BigDecimal("159.99"), new BigDecimal("179.99"),
+                        new BigDecimal("0.10"), new BigDecimal("179.99"),
                         "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80"),
                         false, "NEW", new BigDecimal("4.8"), 95, 50, categories.get("Accessories"), brands.get("Logitech"));
 
                 seedProduct(productRepo, "CORSAIR-DOM-64", "Corsair Dominator Titanium RGB 64GB DDR5",
                         "2x32GB DDR5 6000MHz CL30, patented DHX cooling, customizable top bars, XMP 3.0.",
-                        new BigDecimal("289.99"), new BigDecimal("329.99"),
+                        new BigDecimal("0.10"), new BigDecimal("329.99"),
                         "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80",
                         List.of("https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80"),
                         false, null, new BigDecimal("4.9"), 22, 40, categories.get("Accessories"), brands.get("Corsair"));
+
 
                 log.info("Catalog seed check completed. Total products in store: {}", productRepo.count());
             }

@@ -15,13 +15,25 @@ import { DashboardBrandsTab } from "@/components/dashboard/DashboardBrandsTab";
 import { DashboardCustomersTab } from "@/components/dashboard/DashboardCustomersTab";
 import { DashboardFinancesTab } from "@/components/dashboard/DashboardFinancesTab";
 import { DashboardSettingsTab } from "@/components/dashboard/DashboardSettingsTab";
+import { DashboardPosTab } from "@/components/dashboard/DashboardPosTab";
 
 export default function DashboardPage() {
   const { orders, updateOrderStatus } = useCart();
-  const [activeSection, setActiveSection] = useState<DashboardSection>("dashboard");
+  const [activeSection, setActiveSection] = useState<DashboardSection>("pos");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+
+  // Sync tab from URL if present (e.g. /dashboard?tab=overview or /dashboard?tab=pos)
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") as DashboardSection;
+      if (tab) {
+        setActiveSection(tab);
+      }
+    }
+  }, []);
 
   const handleOpenAddProduct = () => {
     setActiveSection("products");
@@ -41,15 +53,25 @@ export default function DashboardPage() {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-50/50 dark:bg-[#090d16]">
-        {/* Top Header */}
-        <DashboardHeader
-          onAddProduct={handleOpenAddProduct}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
+        {/* Top Header - shown on regular dashboard tabs */}
+        {activeSection !== "pos" && (
+          <DashboardHeader
+            onAddProduct={handleOpenAddProduct}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        )}
 
         {/* Tab Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main
+          className={`flex-1 ${
+            activeSection === "pos"
+              ? "p-2 sm:p-4 lg:p-6 max-w-[1750px]"
+              : "p-4 sm:p-6 lg:p-8 max-w-7xl"
+          } w-full mx-auto space-y-6`}
+        >
+          {activeSection === "pos" && <DashboardPosTab />}
+
           {activeSection === "dashboard" && (
             <DashboardOverviewTab
               onAddProduct={handleOpenAddProduct}
