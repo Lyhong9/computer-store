@@ -101,4 +101,15 @@ public class AppUser {
     public Set<Role> getRoles() {
         return Set.copyOf(roles);
     }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles.clear();
+        if (roles != null) {
+            this.roles.addAll(roles);
+        }
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 }

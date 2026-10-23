@@ -7,10 +7,6 @@ import {
   Plus,
   Minus,
   Tag,
-  Bell,
-  Settings,
-  UserPlus,
-  ChevronDown,
   CreditCard,
   QrCode,
   RotateCcw,
@@ -317,62 +313,6 @@ export function DashboardPosTab() {
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
             Fast Point-of-Sale with live Bakong KHQR &amp; ABA PayWay integration ($0.10 test enabled)
           </p>
-        </div>
-
-        {/* Top Right Action Tools */}
-        <div className="flex items-center gap-3">
-          {/* Notification Bell */}
-          <button
-            type="button"
-            className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors relative shadow-xs"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-900" />
-          </button>
-
-          {/* Settings */}
-          <button
-            type="button"
-            className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors shadow-xs"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-
-          {/* Team / Staff Avatars Stack */}
-          <div className="hidden sm:flex items-center -space-x-2 border-r border-slate-200 dark:border-zinc-800 pr-3 mr-1">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
-              alt="Cashier 1"
-              className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 object-cover"
-            />
-            <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80"
-              alt="Cashier 2"
-              className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 object-cover"
-            />
-            <img
-              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80"
-              alt="Cashier 3"
-              className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 object-cover"
-            />
-          </div>
-
-          {/* New Access Button */}
-          <button
-            type="button"
-            className="px-3.5 py-2 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition-colors shadow-xs"
-          >
-            <UserPlus className="w-3.5 h-3.5 text-slate-500" />
-            <span>New Access</span>
-          </button>
-
-          {/* User Profile */}
-          <div className="flex items-center gap-2 pl-1 cursor-pointer">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-xs shadow-sm">
-              DL
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-          </div>
         </div>
       </div>
 

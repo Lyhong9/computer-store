@@ -367,3 +367,48 @@ export const checkBackendHealth = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export interface UserAccount {
+  id: number;
+  username: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  role: "ADMIN" | "CUSTOMER" | "STAFF";
+  roles: string[];
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const usersApi = {
+  getAll: async (): Promise<UserAccount[]> => {
+    try {
+      const res = await apiClient.get<UserAccount[]>("/api/users");
+      return res.data;
+    } catch {
+      try {
+        const fallback = await fetch("/api/users");
+        if (fallback.ok) return await fallback.json();
+      } catch {}
+      return [];
+    }
+  },
+
+  updateRole: async (id: number, role: "ADMIN" | "CUSTOMER" | "STAFF", email?: string): Promise<UserAccount> => {
+    try {
+      const res = await fetch(`/api/users/${id}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update role");
+      return data.user || data;
+    } catch {
+      const direct = await apiClient.patch<UserAccount>(`/api/users/${id}/role`, { role });
+      return direct.data;
+    }
+  },
+};

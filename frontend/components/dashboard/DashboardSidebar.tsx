@@ -66,7 +66,7 @@ export function DashboardSidebar({
     { id: "products", label: "Products", icon: Package },
     { id: "categories", label: "Categories", icon: FolderTree },
     { id: "brands", label: "Brands", icon: Tag },
-    { id: "customers", label: "Customers", icon: Users },
+    { id: "customers", label: "Users & Roles", icon: Users },
     { id: "content", label: "Content", icon: FileText },
     { id: "store", label: "Online Store", icon: Store, isExternal: true, href: "/" },
   ];
