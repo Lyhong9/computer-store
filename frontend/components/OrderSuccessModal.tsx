@@ -71,9 +71,9 @@ export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
               Items Ordered ({order.items.length})
             </span>
             <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
-              {order.items.map((item) => (
+              {order.items.map((item, idx) => (
                 <div
-                  key={item.product.id}
+                  key={`success-item-${item.product?.id || idx}-${idx}`}
                   className="flex justify-between text-zinc-300 text-[11px]"
                 >
                   <span className="truncate max-w-[240px]">

@@ -33,6 +33,65 @@ public class CustomerService {
         return toResponse(getCustomer(id));
     }
 
+    @Transactional(readOnly = true)
+    public CustomerResponse findByUsername(String username) {
+        Customer customer = customers.findByUserUsername(username)
+                .or(() -> customers.findByUserEmail(username))
+                .orElseThrow(() -> new IllegalArgumentException("Customer profile not found for: " + username));
+        return toResponse(customer);
+    }
+
+    public CustomerResponse getOrCreateCurrentCustomer(String username) {
+        return customers.findByUserUsername(username)
+                .or(() -> customers.findByUserEmail(username))
+                .map(this::toResponse)
+                .orElseGet(() -> {
+                    AppUser user = users.findByUsername(username)
+                            .or(() -> users.findByEmail(username))
+                            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+
+                    Customer customer = new Customer(
+                            user,
+                            user.getUsername(),
+                            "",
+                            null,
+                            null,
+                            null
+                    );
+                    return toResponse(customers.save(customer));
+                });
+    }
+
+    public CustomerResponse updateCurrentCustomer(String username, CustomerRequest request) {
+        Customer customer = customers.findByUserUsername(username)
+                .or(() -> customers.findByUserEmail(username))
+                .orElseGet(() -> {
+                    AppUser user = users.findByUsername(username)
+                            .or(() -> users.findByEmail(username))
+                            .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+                    Customer newCustomer = new Customer(user, request.firstName(), request.lastName(), request.phone());
+                    return customers.save(newCustomer);
+                });
+
+        if (request.firstName() != null && !request.firstName().isBlank()) {
+            customer.setFirstName(request.firstName().trim());
+        }
+        if (request.lastName() != null) {
+            customer.setLastName(request.lastName().trim());
+        }
+        if (request.phone() != null) {
+            customer.setPhone(normalize(request.phone()));
+        }
+        if (request.address() != null) {
+            customer.setAddress(normalize(request.address()));
+        }
+        if (request.city() != null) {
+            customer.setCity(normalize(request.city()));
+        }
+
+        return toResponse(customers.save(customer));
+    }
+
     public CustomerResponse create(CustomerRequest request) {
         AppUser user = getOptionalUser(request.userId());
         if (user != null) {
@@ -43,7 +102,9 @@ public class CustomerService {
                 user,
                 request.firstName().trim(),
                 request.lastName().trim(),
-                normalize(request.phone()));
+                normalize(request.phone()),
+                normalize(request.address()),
+                normalize(request.city()));
 
         return toResponse(customers.save(customer));
     }
@@ -59,6 +120,8 @@ public class CustomerService {
         customer.setFirstName(request.firstName().trim());
         customer.setLastName(request.lastName().trim());
         customer.setPhone(normalize(request.phone()));
+        customer.setAddress(normalize(request.address()));
+        customer.setCity(normalize(request.city()));
 
         return toResponse(customer);
     }
@@ -102,6 +165,8 @@ public class CustomerService {
                 user == null ? null : user.getEmail(),
                 customer.getFirstName(),
                 customer.getLastName(),
-                customer.getPhone());
+                customer.getPhone(),
+                customer.getAddress(),
+                customer.getCity());
     }
 }

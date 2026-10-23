@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface NavbarProps {
   onSearchChange?: (query: string) => void;
@@ -19,15 +20,8 @@ export function Navbar({
   onSelectCategory,
 }: NavbarProps) {
   const { totalItems, setIsCartOpen } = useCart();
-  const { user } = useUser();
-  const role = (user?.publicMetadata?.role as string) || "customer";
-
-  // Silent sync to PostgreSQL backend
-  useEffect(() => {
-    if (user) {
-      fetch("/api/sync-user", { method: "POST" }).catch(() => {});
-    }
-  }, [user]);
+  const { effectiveRole, isAdmin, isCustomer } = useAuth();
+  const role = effectiveRole;
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-zinc-950/85 border-b border-zinc-800/80 transition-all">
@@ -97,12 +91,22 @@ export function Navbar({
                 My Orders
               </Link>
               <Show when="signed-in">
-                <Link
-                  href="/dashboard"
-                  className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-zinc-900 transition-colors"
-                >
-                  Account
-                </Link>
+                {isAdmin ? (
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors font-semibold"
+                  >
+                    <span>⚡</span>
+                    <span>Admin Dashboard</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href="/dashboard"
+                    className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-zinc-900 transition-colors"
+                  >
+                    My Account
+                  </Link>
+                )}
               </Show>
             </nav>
 
@@ -146,10 +150,17 @@ export function Navbar({
 
             <Show when="signed-in">
               <div className="flex items-center gap-2.5 pl-2 border-l border-zinc-800">
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 uppercase tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                  {role}
-                </span>
+                {isAdmin ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/40 uppercase tracking-wider shadow-xs shadow-purple-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                    ADMIN
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    CUSTOMER
+                  </span>
+                )}
                 <UserButton
                   appearance={{
                     elements: {

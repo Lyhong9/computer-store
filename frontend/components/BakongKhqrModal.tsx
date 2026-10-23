@@ -38,9 +38,56 @@ export function BakongKhqrModal({
     return "00020101021129290015dam_lyhong@bkrt0206Bakong5204599953038405802KH5910DAM LYHONG6010Phnom Penh62230309POS Store0706POS-016304CCD0";
   }, []);
 
-  // Generate crisp QR code whenever qrData or qrMode changes
+  // Helper functions for client-side NBC EMVCo KHQR generation
+  const generateClientKhqr = useCallback((amount: number, orderId: string): string => {
+    const tlv = (tag: string, value: string) => `${tag}${String(value.length).padStart(2, "0")}${value}`;
+    const crc16 = (data: string): string => {
+      let crc = 0xffff;
+      for (let i = 0; i < data.length; i++) {
+        crc ^= data.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) {
+          if ((crc & 0x8000) !== 0) {
+            crc = ((crc << 1) ^ 0x1021) & 0xffff;
+          } else {
+            crc = (crc << 1) & 0xffff;
+          }
+        }
+      }
+      return crc.toString(16).toUpperCase().padStart(4, "0");
+    };
+
+    const accountId = "dam_lyhong@bkrt";
+    const sub29 = tlv("00", accountId) + tlv("02", "Bakong");
+    const sub62 = tlv("01", orderId || "ORD-STORE") + tlv("07", "POS-01");
+    const now = Date.now();
+    const exp = now + 15 * 60 * 1000;
+    const sub99 = tlv("00", String(now)) + tlv("01", String(exp));
+
+    const payloadWithoutCrc =
+      tlv("00", "01") +
+      tlv("01", "12") +
+      tlv("29", sub29) +
+      tlv("52", "5999") +
+      tlv("53", "840") +
+      tlv("54", Number(amount || 0.1).toFixed(2)) +
+      tlv("58", "KH") +
+      tlv("59", "DAM LYHONG") +
+      tlv("60", "Phnom Penh") +
+      tlv("62", sub62) +
+      tlv("99", sub99) +
+      "6304";
+
+    return payloadWithoutCrc + crc16(payloadWithoutCrc);
+  }, []);
+
+  // Generate crisp QR code whenever qrData, qrMode, or order changes
   useEffect(() => {
-    const rawString = qrMode === "dynamic" ? qrData?.qrString : staticKhqrString;
+    const fallbackDynamic = order ? generateClientKhqr(order.total, order.id) : staticKhqrString;
+    const rawString =
+      qrMode === "dynamic"
+        ? qrData?.qrString || fallbackDynamic
+        : staticKhqrString;
+
     if (rawString) {
       QRCode.toDataURL(rawString, {
         errorCorrectionLevel: "H",
@@ -56,7 +103,7 @@ export function BakongKhqrModal({
           if (qrData?.qrImageBase64) setCleanQrImage(qrData.qrImageBase64);
         });
     }
-  }, [qrData, qrMode, staticKhqrString]);
+  }, [qrData, qrMode, staticKhqrString, order, generateClientKhqr]);
 
   // Load KHQR on open
   useEffect(() => {
@@ -74,6 +121,21 @@ export function BakongKhqrModal({
     let isMounted = true;
     setIsLoading(true);
 
+    // Set immediate client-side QR so the user never sees a blank box
+    const immediateKhqr = generateClientKhqr(order.total, order.id);
+    setQrData({
+      orderNumber: order.id,
+      amount: order.total,
+      currency: "USD",
+      accountId: "dam_lyhong@bkrt",
+      accountName: "DAM LYHONG",
+      storeLabel: "POS Store",
+      qrString: immediateKhqr,
+      md5Hash: order.id,
+      qrImageBase64: "",
+    });
+
+    // Also call backend to register transaction and get official MD5 hash
     paymentsApi
       .generateBakongQr(order.id)
       .then((data) => {
@@ -83,7 +145,7 @@ export function BakongKhqrModal({
         }
       })
       .catch((err) => {
-        console.warn("Failed to generate Bakong KHQR:", err);
+        console.warn("Backend Bakong QR generation fallback active:", err);
         if (isMounted) {
           setIsLoading(false);
         }
@@ -92,7 +154,7 @@ export function BakongKhqrModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, order]);
+  }, [isOpen, order, generateClientKhqr]);
 
   const isTriggeredRef = useRef(false);
 
@@ -159,11 +221,11 @@ export function BakongKhqrModal({
         pollIntervalRef.current = null;
       }
 
-      // Fast auto-close in 1.2s to smoothly dismiss modal
+      // Auto-transition to order success screen in 2.5s to smoothly dismiss modal
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = setTimeout(() => {
         completeSuccess();
-      }, 1200);
+      }, 2500);
     },
     [completeSuccess]
   );
@@ -232,24 +294,6 @@ export function BakongKhqrModal({
       }
     };
   }, [isOpen, order?.id, qrData?.md5Hash, isSuccess, handleSuccessTrigger]);
-
-  // Simulate payment test helper
-  const handleSimulatePayment = async () => {
-    if (!order) return;
-    setIsVerifying(true);
-    setStatusText("Verifying transaction...");
-
-    try {
-      const res = await paymentsApi.simulateSuccess(order.id, "BAKONG_KHQR");
-      if (res.isPaid) {
-        handleSuccessTrigger(res.transactionId || "SIMULATED-NBC-OK");
-      } else {
-        handleSuccessTrigger("SIMULATED-NBC-OK");
-      }
-    } catch {
-      handleSuccessTrigger("SIMULATED-LOCAL-OK");
-    }
-  };
 
   const handleCopyAccountId = () => {
     const acc = qrData?.accountId || "dam_lyhong@bkrt";
@@ -337,18 +381,19 @@ export function BakongKhqrModal({
               )}
             </div>
 
-            <div className="mt-6 w-full space-y-2">
+            <div className="mt-6 w-full space-y-2.5">
               <button
                 type="button"
                 onClick={completeSuccess}
-                className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer"
               >
-                <span>Done &amp; Close Modal</span>
+                <span>View Order Confirmation &amp; Receipt</span>
                 <span>&rarr;</span>
               </button>
-              <p className="text-[11px] text-emerald-400/80 font-medium animate-pulse">
-                Closing automatically in 1 second...
-              </p>
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                <span>Redirecting to receipt in 2 seconds...</span>
+              </div>
             </div>
           </div>
         ) : (
@@ -402,7 +447,7 @@ export function BakongKhqrModal({
 
             {/* QR Code Container - Pure and Unobstructed */}
             <div className="relative w-64 h-64 bg-white rounded-2xl p-2 shadow-lg flex items-center justify-center border-4 border-red-500/40">
-              {isLoading ? (
+              {isLoading && !cleanQrImage ? (
                 <div className="flex flex-col items-center gap-3 text-zinc-500">
                   <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs font-bold text-zinc-700">Generating Compliant KHQR...</span>
@@ -488,19 +533,19 @@ export function BakongKhqrModal({
               </div>
             </div>
 
-            {/* Action Buttons: Check Payment Now + Simulate Fallback */}
-            <div className="mt-5 w-full space-y-2">
+            {/* Action Buttons: Real-Time Payment Check & Cancel */}
+            <div className="mt-5 w-full space-y-2.5">
               <button
                 type="button"
                 id="pos-check-payment-btn"
                 onClick={handleCheckNow}
                 disabled={isVerifying || isSuccess}
-                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-900/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs shadow-lg shadow-blue-900/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {isVerifying ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>Verifying with NBC Open API...</span>
+                    <span>Checking Status with NBC Bakong...</span>
                   </>
                 ) : (
                   <>
@@ -512,18 +557,8 @@ export function BakongKhqrModal({
 
               <button
                 type="button"
-                onClick={handleSimulatePayment}
-                disabled={isVerifying || isSuccess}
-                className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <span>⚡</span>
-                <span>Simulate Payment Success (Demo / Sandbox)</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={onClose}
-                className="w-full py-2 rounded-xl text-zinc-400 hover:text-white text-xs font-semibold transition-colors"
+                className="w-full py-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold transition-colors border border-zinc-700/60"
               >
                 Pay Later / Cancel
               </button>

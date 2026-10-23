@@ -28,6 +28,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { usersApi, UserAccount } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 const SAMPLE_FALLBACK_USERS: UserAccount[] = [
   {
@@ -73,6 +74,7 @@ const SAMPLE_FALLBACK_USERS: UserAccount[] = [
 ];
 
 export function DashboardCustomersTab() {
+  const { user: currentAuthUser, refreshUser } = useAuth();
   const [users, setUsers] = useState<UserAccount[]>(SAMPLE_FALLBACK_USERS);
   const [loading, setLoading] = useState<boolean>(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -131,6 +133,16 @@ export function DashboardCustomersTab() {
         message: `Successfully updated user #${userId} (${email || "account"}) to role: ${newRole}`,
       });
       setTimeout(() => setStatusNotification(null), 4000);
+
+      // If updating current user's role, refresh the live auth session immediately
+      if (
+        currentAuthUser &&
+        (currentAuthUser.id === userId ||
+          currentAuthUser.email === email ||
+          currentAuthUser.username === email)
+      ) {
+        await refreshUser();
+      }
     } catch (err: any) {
       // Revert optimistic update on failure
       setUsers(previousUsers);

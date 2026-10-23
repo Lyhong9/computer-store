@@ -333,10 +333,12 @@ export function DashboardOrdersTab({
                 <span>Subtotal:</span>
                 <span>{formatCurrency(selectedOrder.subtotal)}</span>
               </div>
-              <div className="flex justify-between text-slate-500 dark:text-zinc-400">
-                <span>Estimated Tax:</span>
-                <span>{formatCurrency(selectedOrder.tax)}</span>
-              </div>
+              {selectedOrder.tax > 0 && (
+                <div className="flex justify-between text-slate-500 dark:text-zinc-400">
+                  <span>Estimated Tax:</span>
+                  <span>{formatCurrency(selectedOrder.tax)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-extrabold text-slate-900 dark:text-zinc-50 pt-1.5 border-t border-slate-200 dark:border-zinc-800">
                 <span>Grand Total:</span>
                 <span className="text-blue-600 dark:text-blue-400">

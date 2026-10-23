@@ -22,9 +22,12 @@ import {
   PanelLeft,
   Sparkles,
   Calculator,
+  User,
+  EyeOff,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
 export type DashboardSection =
   | "dashboard"
@@ -40,7 +43,8 @@ export type DashboardSection =
   | "reports"
   | "analytics"
   | "discounts"
-  | "settings";
+  | "settings"
+  | "account";
 
 interface DashboardSidebarProps {
   activeSection: DashboardSection;
@@ -57,7 +61,20 @@ export function DashboardSidebar({
   setCollapsed,
   orderCount = 12,
 }: DashboardSidebarProps) {
+  const {
+    role: baseRole,
+    effectiveRole,
+    isAdmin,
+    isCustomer,
+    previewRole,
+    setPreviewRole,
+  } = useAuth();
   const [financesOpen, setFinancesOpen] = React.useState(true);
+
+  const customerNav = [
+    { id: "account", label: "My Profile & Orders", icon: User },
+    { id: "store", label: "Storefront Catalog", icon: Store, isExternal: true, href: "/" },
+  ];
 
   const mainNav = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -88,7 +105,11 @@ export function DashboardSidebar({
         {/* Brand & Collapse Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-blue-500/25 shrink-0">
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${
+              isCustomer
+                ? "from-teal-600 via-emerald-600 to-teal-500 shadow-teal-500/25"
+                : "from-blue-600 via-indigo-600 to-blue-500 shadow-blue-500/25"
+            } flex items-center justify-center text-white font-black text-lg shadow-md shrink-0`}>
               <svg
                 width="20"
                 height="20"
@@ -105,8 +126,12 @@ export function DashboardSidebar({
                 <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none">
                   Shopeers
                 </span>
-                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
-                  Hardware Admin
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                  isCustomer
+                    ? "text-teal-600 dark:text-teal-400"
+                    : "text-purple-600 dark:text-purple-400"
+                }`}>
+                  {isCustomer ? "Customer Portal" : "Admin Portal"}
                 </span>
               </div>
             )}
@@ -126,160 +151,269 @@ export function DashboardSidebar({
 
         {/* Navigation list */}
         <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-220px)]">
-          {mainNav.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-
-            if (item.isExternal) {
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href || "/"}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors"
-                  title={item.label}
-                >
-                  <Icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-zinc-400" />
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
-              );
-            }
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id as DashboardSection)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all relative ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold"
-                    : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
-                }`}
-                title={item.label}
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      isActive ? "text-white" : "text-slate-500 dark:text-zinc-400"
-                    }`}
-                  />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </div>
-                {!collapsed && item.badge !== undefined && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
-          {/* FINANCES Accordion */}
-          <div className="pt-3">
-            {!collapsed ? (
-              <button
-                onClick={() => setFinancesOpen(!financesOpen)}
-                className="w-full flex items-center justify-between px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300"
-              >
-                <span>FINANCES</span>
-                {financesOpen ? (
-                  <ChevronDown className="w-3 h-3" />
-                ) : (
-                  <ChevronRight className="w-3 h-3" />
-                )}
-              </button>
-            ) : (
-              <div className="h-px bg-slate-200 dark:bg-zinc-800 my-2" />
-            )}
-
-            {(financesOpen || collapsed) && (
-              <div className="space-y-1 mt-1">
-                {financesNav.map((f) => {
-                  const Icon = f.icon;
-                  const isActive = activeSection === f.id;
-                  return (
-                    <button
-                      key={f.id}
-                      onClick={() => setActiveSection(f.id as DashboardSection)}
-                      className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
-                        isActive
-                          ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold"
-                          : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/40"
-                      }`}
-                      title={f.label}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      {!collapsed && <span>{f.label}</span>}
-                    </button>
-                  );
-                })}
+          {/* CUSTOMER MODE NAVIGATION */}
+          {isCustomer ? (
+            <div className="space-y-1.5">
+              <div className="px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                Customer Menu
               </div>
-            )}
-          </div>
+              {customerNav.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id || (item.id === "account" && activeSection === "dashboard");
 
-          {/* Additional Links */}
-          <div className="pt-2">
-            <button
-              onClick={() => setActiveSection("discounts")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeSection === "discounts"
-                  ? "bg-blue-600 text-white font-bold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
-              }`}
-              title="Discounts"
-            >
-              <Percent className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>Discounts</span>}
-            </button>
-            <button
-              onClick={() => setActiveSection("settings")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeSection === "settings"
-                  ? "bg-blue-600 text-white font-bold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
-              }`}
-              title="Settings"
-            >
-              <Settings className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>Settings</span>}
-            </button>
-          </div>
+                if (item.isExternal) {
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href || "/"}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors"
+                      title={item.label}
+                    >
+                      <Icon className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id as DashboardSection)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all relative ${
+                      isActive
+                        ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm shadow-teal-600/30 font-bold"
+                        : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
+                    }`}
+                    title={item.label}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive ? "text-white" : "text-teal-600 dark:text-teal-400"
+                        }`}
+                      />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            /* ADMIN / STAFF MODE NAVIGATION */
+            <>
+              {mainNav.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+
+                if (item.isExternal) {
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href || "/"}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors"
+                      title={item.label}
+                    >
+                      <Icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-zinc-400" />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id as DashboardSection)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all relative ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold"
+                        : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
+                    }`}
+                    title={item.label}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive ? "text-white" : "text-slate-500 dark:text-zinc-400"
+                        }`}
+                      />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </div>
+                    {!collapsed && item.badge !== undefined && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isActive
+                            ? "bg-white/20 text-white"
+                            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* FINANCES Accordion */}
+              <div className="pt-3">
+                {!collapsed ? (
+                  <button
+                    onClick={() => setFinancesOpen(!financesOpen)}
+                    className="w-full flex items-center justify-between px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300"
+                  >
+                    <span>FINANCES</span>
+                    {financesOpen ? (
+                      <ChevronDown className="w-3 h-3" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3" />
+                    )}
+                  </button>
+                ) : (
+                  <div className="h-px bg-slate-200 dark:bg-zinc-800 my-2" />
+                )}
+
+                {(financesOpen || collapsed) && (
+                  <div className="space-y-1 mt-1">
+                    {financesNav.map((f) => {
+                      const Icon = f.icon;
+                      const isActive = activeSection === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => setActiveSection(f.id as DashboardSection)}
+                          className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                            isActive
+                              ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold"
+                              : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/40"
+                          }`}
+                          title={f.label}
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          {!collapsed && <span>{f.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Links */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setActiveSection("discounts")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === "discounts"
+                      ? "bg-blue-600 text-white font-bold"
+                      : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
+                  }`}
+                  title="Discounts"
+                >
+                  <Percent className="w-4 h-4 shrink-0" />
+                  {!collapsed && <span>Discounts</span>}
+                </button>
+                <button
+                  onClick={() => setActiveSection("settings")}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeSection === "settings"
+                      ? "bg-blue-600 text-white font-bold"
+                      : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60"
+                  }`}
+                  title="Settings"
+                >
+                  <Settings className="w-4 h-4 shrink-0" />
+                  {!collapsed && <span>Settings</span>}
+                </button>
+              </div>
+            </>
+          )}
         </nav>
       </div>
 
-      {/* Upgrade Banner in Bottom Sidebar */}
-      {!collapsed ? (
-        <div className="p-3">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 text-white relative overflow-hidden shadow-lg shadow-blue-500/20">
-            <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 rounded-full bg-white/10 blur-md pointer-events-none" />
-            <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center mb-2.5">
-              <Sparkles className="w-4 h-4 text-white" />
+      {/* Role-Specific Bottom Card */}
+      {isCustomer ? (
+        previewRole === "CUSTOMER" ? (
+          !collapsed ? (
+            <div className="p-3">
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-300 shadow-sm">
+                <div className="flex items-center gap-2 font-bold text-xs">
+                  <EyeOff className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Customer Preview</span>
+                </div>
+                <p className="text-[11px] text-amber-700/90 dark:text-amber-400 mt-1 leading-snug">
+                  You are previewing how customers see their account.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPreviewRole(null)}
+                  className="mt-2.5 w-full h-7 text-xs font-bold border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 shadow-2xs"
+                >
+                  Exit Preview
+                </Button>
+              </div>
             </div>
-            <h4 className="font-extrabold text-sm leading-tight text-white">
-              Upgrade to Pro
-            </h4>
-            <p className="text-[11px] text-blue-100/90 mt-1 leading-snug">
-              Unlock AI analytics, auto-restocking & multi-store sync.
-            </p>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="mt-3 w-full h-8 text-xs font-bold bg-white text-blue-600 hover:bg-blue-50 shadow-xs"
-            >
-              Upgrade Now
-            </Button>
-          </div>
-        </div>
+          ) : (
+            <div className="p-3 flex justify-center">
+              <button
+                onClick={() => setPreviewRole(null)}
+                title="Exit Customer Preview"
+                className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold"
+              >
+                <EyeOff className="w-4 h-4" />
+              </button>
+            </div>
+          )
+        ) : (
+          !collapsed && (
+            <div className="p-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-600 via-emerald-600 to-teal-700 text-white shadow-lg shadow-teal-500/15">
+                <h4 className="font-extrabold text-xs">Customer Support</h4>
+                <p className="text-[11px] text-teal-100/90 mt-1 leading-snug">
+                  Manage shipping addresses and track current order statuses.
+                </p>
+                <Link href="/">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="mt-3 w-full h-7 text-xs font-bold bg-white text-teal-700 hover:bg-teal-50"
+                  >
+                    Browse Catalog
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )
+        )
       ) : (
-        <div className="p-3 flex justify-center">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-            <Sparkles className="w-4 h-4" />
+        /* Admin Upgrade Banner */
+        !collapsed ? (
+          <div className="p-3">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 text-white relative overflow-hidden shadow-lg shadow-blue-500/20">
+              <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 rounded-full bg-white/10 blur-md pointer-events-none" />
+              <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center mb-2.5">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="font-extrabold text-sm leading-tight text-white">
+                Upgrade to Pro
+              </h4>
+              <p className="text-[11px] text-blue-100/90 mt-1 leading-snug">
+                Unlock AI analytics, auto-restocking & multi-store sync.
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="mt-3 w-full h-8 text-xs font-bold bg-white text-blue-600 hover:bg-blue-50 shadow-xs"
+              >
+                Upgrade Now
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-3 flex justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+              <Sparkles className="w-4 h-4" />
+            </div>
+          </div>
+        )
       )}
     </aside>
   );

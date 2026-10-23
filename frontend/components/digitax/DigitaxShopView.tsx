@@ -140,7 +140,7 @@ export function DigitaxShopView({
                 <span>All Products</span>
                 <span className="text-[11px] text-slate-400">({products.length})</span>
               </button>
-              {categories.map((c) => {
+              {categories.map((c, idx) => {
                 const count = products.filter(
                   (p) => p.categoryName?.toLowerCase() === c.name.toLowerCase()
                 ).length;
@@ -149,7 +149,7 @@ export function DigitaxShopView({
 
                 return (
                   <button
-                    key={c.id}
+                    key={`cat-${c.id || idx}-${c.name || idx}`}
                     onClick={() => onSelectCategory(c.name)}
                     className={`w-full text-left py-1.5 px-2 rounded-lg transition-colors font-medium flex items-center justify-between ${
                       isSelected
@@ -237,9 +237,9 @@ export function DigitaxShopView({
                 />
                 <span>All Brands</span>
               </label>
-              {brands.map((b) => (
+              {brands.map((b, idx) => (
                 <label
-                  key={b.id}
+                  key={`brand-${b.id || idx}-${b.name || idx}`}
                   className="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-blue-600 font-medium"
                 >
                   <input
@@ -344,7 +344,7 @@ export function DigitaxShopView({
           >
             {paginatedProducts.map((p, idx) => (
               <div
-                key={`${p.id}-${p.sku || idx}`}
+                key={`shop-prod-${p.id || 'p'}-${idx}-${p.sku || p.name || ''}`}
                 className="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between hover:shadow-xl transition-all duration-300 group relative"
               >
                 {/* Badges */}
@@ -422,7 +422,7 @@ export function DigitaxShopView({
           <div className="flex items-center justify-center gap-2 pt-6">
             {[...Array(totalPages)].map((_, i) => (
               <button
-                key={i}
+                key={`page-btn-${i}`}
                 onClick={() => setCurrentPage(i + 1)}
                 className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${
                   currentPage === i + 1

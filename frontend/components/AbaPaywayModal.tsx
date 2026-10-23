@@ -93,7 +93,7 @@ export function AbaPaywayModal({
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
       completeSuccess();
-    }, 1200);
+    }, 2500);
   }, [completeSuccess]);
 
   // Polling for ABA PayWay status
@@ -127,20 +127,25 @@ export function AbaPaywayModal({
     }
   };
 
-  const handleSimulatePayment = async () => {
-    if (!order) return;
+  const handleCheckAbaStatus = async () => {
+    if (!order || isVerifying || isSuccess) return;
     setIsVerifying(true);
-    setStatusText("Verifying ABA transaction...");
+    setStatusText("Checking ABA transaction status...");
 
     try {
-      const res = await paymentsApi.simulateSuccess(order.id, "ABA_PAYWAY");
+      const res = await paymentsApi.checkAbaStatus(order.id);
       if (res.isPaid) {
         handleSuccessTrigger();
       } else {
-        handleSuccessTrigger();
+        setStatusText(res.message || "Waiting for ABA confirmation...");
+        setTimeout(() => {
+          if (!isSuccess) setStatusText("Listening for ABA PayWay confirmation...");
+        }, 3000);
       }
     } catch {
-      handleSuccessTrigger();
+      setStatusText("Verification check timed out. Retrying...");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -288,19 +293,19 @@ export function AbaPaywayModal({
 
             <button
               type="button"
-              onClick={handleSimulatePayment}
+              onClick={handleCheckAbaStatus}
               disabled={isVerifying || isSuccess}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-900/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-900/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isVerifying ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  <span>Verifying via ABA PayWay...</span>
+                  <span>Checking Status via ABA PayWay...</span>
                 </>
               ) : (
                 <>
-                  <span>⚡</span>
-                  <span>Simulate ABA Payment Success (Demo / Sandbox)</span>
+                  <span>🔄</span>
+                  <span>Check ABA Payment Status</span>
                 </>
               )}
             </button>

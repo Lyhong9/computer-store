@@ -304,13 +304,9 @@ export function CheckoutModal({
                   </span>
                 </div>
                 <div className="flex justify-between text-zinc-400">
-                  <span>Sales Tax (8%)</span>
-                  <span className="text-zinc-200 font-semibold">${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-zinc-400">
-                  <span>Express Courier Shipping</span>
+                  <span>Shipping</span>
                   <span className="text-emerald-400 font-bold">
-                    {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
+                    FREE ($0.00)
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-extrabold text-white pt-2 border-t border-zinc-800">

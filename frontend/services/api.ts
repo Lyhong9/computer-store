@@ -412,3 +412,49 @@ export const usersApi = {
     }
   },
 };
+
+export interface CustomerProfile {
+  id: number;
+  userId: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+}
+
+export const customerApi = {
+  getMe: async (): Promise<CustomerProfile> => {
+    const res = await fetch("/api/customers/me");
+    if (!res.ok) throw new Error("Failed to fetch customer profile");
+    return res.json();
+  },
+  updateMe: async (data: Partial<CustomerProfile>): Promise<CustomerProfile> => {
+    const res = await fetch("/api/customers/me", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update customer profile");
+    return res.json();
+  },
+  getAll: async (): Promise<CustomerProfile[]> => {
+    try {
+      const res = await apiClient.get<CustomerProfile[]>("/api/customers");
+      return res.data;
+    } catch {
+      return [];
+    }
+  },
+};
+
+export const authApi = {
+  getMe: async () => {
+    const res = await fetch("/api/auth/me");
+    if (!res.ok) throw new Error("Failed to fetch auth profile");
+    return res.json();
+  },
+};
+

@@ -156,8 +156,8 @@ export function DigitaxNavbar({
                 <option value="all" className="text-slate-800">
                   All Categories
                 </option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name} className="text-slate-800">
+                {categories.map((c, idx) => (
+                  <option key={`nav-cat-opt-${c.id || idx}-${c.name}`} value={c.name} className="text-slate-800">
                     {c.name}
                   </option>
                 ))}
@@ -309,9 +309,9 @@ export function DigitaxNavbar({
                   <div className="px-3 py-1.5 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                     Browse Categories
                   </div>
-                  {categories.map((c) => (
+                  {categories.map((c, idx) => (
                     <button
-                      key={c.id}
+                      key={`nav-cat-menu-${c.id || idx}-${c.name}`}
                       onClick={() => {
                         onSelectCategory(c.name);
                         setActiveTab("shop");

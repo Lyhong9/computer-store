@@ -210,13 +210,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     0
   );
 
-  // 8% tax
-  const tax = Number((subtotal * 0.08).toFixed(2));
+  // 0% tax (Tax removed per store policy)
+  const tax = 0;
 
-  // Free shipping for orders over $500, else $15 flat rate
-  const shipping = subtotal === 0 || subtotal >= 500 ? 0 : 15.0;
+  // Free shipping on all orders (0.00 fee)
+  const shipping = 0;
 
-  const total = Number((subtotal + tax + shipping).toFixed(2));
+  const total = Number(subtotal.toFixed(2));
 
   const placeOrder = (details: {
     customerName: string;

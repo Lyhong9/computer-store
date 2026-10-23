@@ -31,14 +31,26 @@ public class Customer {
     @Column(length = 50)
     private String phone;
 
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    @Column(length = 100)
+    private String city;
+
     protected Customer() {
     }
 
     public Customer(AppUser user, String firstName, String lastName, String phone) {
+        this(user, firstName, lastName, phone, null, null);
+    }
+
+    public Customer(AppUser user, String firstName, String lastName, String phone, String address, String city) {
         this.user = user;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
+        this.address = address;
+        this.city = city;
     }
 
     public Long getId() {
@@ -75,5 +87,21 @@ public class Customer {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 }

@@ -15,5 +15,10 @@ public record CustomerRequest(
         String lastName,
 
         @Size(max = 50)
-        String phone) {
+        String phone,
+
+        String address,
+
+        @Size(max = 100)
+        String city) {
 }

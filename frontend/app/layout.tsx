@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { CartProvider } from "@/context/CartContext";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { AuthProvider } from "@/context/AuthContext";
 import { ExtensionHydrationFix } from "@/components/ExtensionHydrationFix";
 import "./globals.css";
 
@@ -41,7 +42,9 @@ export default function RootLayout({
           <ExtensionHydrationFix />
           <QueryProvider>
             <ThemeProvider>
-              <CartProvider>{children}</CartProvider>
+              <AuthProvider>
+                <CartProvider>{children}</CartProvider>
+              </AuthProvider>
             </ThemeProvider>
           </QueryProvider>
         </body>

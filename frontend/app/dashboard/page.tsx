@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import {
   DashboardSidebar,
   DashboardSection,
@@ -16,16 +17,18 @@ import { DashboardCustomersTab } from "@/components/dashboard/DashboardCustomers
 import { DashboardFinancesTab } from "@/components/dashboard/DashboardFinancesTab";
 import { DashboardSettingsTab } from "@/components/dashboard/DashboardSettingsTab";
 import { DashboardPosTab } from "@/components/dashboard/DashboardPosTab";
+import { DashboardCustomerAccount } from "@/components/dashboard/DashboardCustomerAccount";
 
 export default function DashboardPage() {
   const { orders, updateOrderStatus } = useCart();
+  const { isCustomer, isAdmin, effectiveRole } = useAuth();
   const [activeSection, setActiveSection] = useState<DashboardSection>("pos");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   // Sync tab from URL if present (e.g. /dashboard?tab=overview or /dashboard?tab=pos)
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab") as DashboardSection;
@@ -34,6 +37,15 @@ export default function DashboardPage() {
       }
     }
   }, []);
+
+  // Sync default view when switching between Admin and Customer roles
+  useEffect(() => {
+    if (isCustomer && (activeSection === "pos" || activeSection === "products" || activeSection === "categories" || activeSection === "brands" || activeSection === "customers")) {
+      setActiveSection("account");
+    } else if (isAdmin && activeSection === "account") {
+      setActiveSection("dashboard");
+    }
+  }, [isCustomer, isAdmin, activeSection]);
 
   const handleOpenAddProduct = () => {
     setActiveSection("products");
@@ -53,8 +65,8 @@ export default function DashboardPage() {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-50/50 dark:bg-[#090d16]">
-        {/* Top Header - shown on regular dashboard tabs */}
-        {activeSection !== "pos" && (
+        {/* Top Header - shown on regular dashboard tabs or whenever user is customer */}
+        {(activeSection !== "pos" || isCustomer) && (
           <DashboardHeader
             onAddProduct={handleOpenAddProduct}
             searchQuery={searchQuery}
@@ -65,60 +77,68 @@ export default function DashboardPage() {
         {/* Tab Content Body */}
         <main
           className={`flex-1 ${
-            activeSection === "pos"
+            activeSection === "pos" && !isCustomer
               ? "p-2 sm:p-4 lg:p-6 max-w-[1750px]"
               : "p-4 sm:p-6 lg:p-8 max-w-7xl"
           } w-full mx-auto space-y-6`}
         >
-          {activeSection === "pos" && <DashboardPosTab />}
+          {/* Customer View */}
+          {isCustomer || activeSection === "account" ? (
+            <DashboardCustomerAccount />
+          ) : (
+            /* Admin Views */
+            <>
+              {activeSection === "pos" && <DashboardPosTab />}
 
-          {activeSection === "dashboard" && (
-            <DashboardOverviewTab
-              onAddProduct={handleOpenAddProduct}
-              orderCount={orders.length || 46}
-            />
-          )}
+              {activeSection === "dashboard" && (
+                <DashboardOverviewTab
+                  onAddProduct={handleOpenAddProduct}
+                  orderCount={orders.length || 46}
+                />
+              )}
 
-          {activeSection === "products" && (
-            <DashboardProductsTab
-              isModalOpen={isAddProductModalOpen}
-              setIsModalOpen={setIsAddProductModalOpen}
-            />
-          )}
+              {activeSection === "products" && (
+                <DashboardProductsTab
+                  isModalOpen={isAddProductModalOpen}
+                  setIsModalOpen={setIsAddProductModalOpen}
+                />
+              )}
 
-          {activeSection === "orders" && (
-            <DashboardOrdersTab
-              orders={orders}
-              onUpdateStatus={updateOrderStatus}
-            />
-          )}
+              {activeSection === "orders" && (
+                <DashboardOrdersTab
+                  orders={orders}
+                  onUpdateStatus={updateOrderStatus}
+                />
+              )}
 
-          {activeSection === "categories" && <DashboardCategoriesTab />}
+              {activeSection === "categories" && <DashboardCategoriesTab />}
 
-          {activeSection === "brands" && <DashboardBrandsTab />}
+              {activeSection === "brands" && <DashboardBrandsTab />}
 
-          {activeSection === "customers" && <DashboardCustomersTab />}
+              {activeSection === "customers" && <DashboardCustomersTab />}
 
-          {(activeSection === "invoices" ||
-            activeSection === "transactions" ||
-            activeSection === "reports" ||
-            activeSection === "analytics") && (
-            <DashboardFinancesTab type={activeSection} />
-          )}
+              {(activeSection === "invoices" ||
+                activeSection === "transactions" ||
+                activeSection === "reports" ||
+                activeSection === "analytics") && (
+                <DashboardFinancesTab type={activeSection} />
+              )}
 
-          {(activeSection === "settings" || activeSection === "discounts") && (
-            <DashboardSettingsTab section={activeSection} />
-          )}
+              {(activeSection === "settings" || activeSection === "discounts") && (
+                <DashboardSettingsTab section={activeSection} />
+              )}
 
-          {activeSection === "content" && (
-            <div className="p-8 text-center text-slate-500">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-200">
-                Content Management CMS
-              </h2>
-              <p className="text-xs mt-1">
-                Manage promotional homepage banners, announcement tickers, and customer reviews.
-              </p>
-            </div>
+              {activeSection === "content" && (
+                <div className="p-8 text-center text-slate-500">
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-200">
+                    Content Management CMS
+                  </h2>
+                  <p className="text-xs mt-1">
+                    Manage promotional homepage banners, announcement tickers, and customer reviews.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>

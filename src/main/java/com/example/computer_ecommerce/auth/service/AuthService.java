@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -41,22 +42,25 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        // Support login with either username or email
+        AppUser user = users.findByUsername(request.username())
+                .or(() -> users.findByEmail(request.username()))
+                .orElseThrow(() -> new IllegalArgumentException("Invalid username or password"));
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.username(), request.password()));
+                        user.getUsername(), request.password()));
 
-        var user = users.findByUsername(request.username())
-                .orElseThrow();
+        return toAuthResponse(user);
+    }
 
-        String role = user.getRoles().stream()
-                .findFirst()
-                .map(Enum::name)
-                .orElseThrow(() -> new IllegalStateException("User has no assigned role"));
+    @Transactional(readOnly = true)
+    public AuthResponse getCurrentUser(String identifier) {
+        AppUser user = users.findByUsername(identifier)
+                .or(() -> users.findByEmail(identifier))
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + identifier));
 
-        return new AuthResponse(
-                jwtService.generateToken(user.getUsername()),
-                user.getUsername(),
-                role);
+        return toAuthResponse(user);
     }
 
     @Transactional
@@ -67,15 +71,17 @@ public class AuthService {
                 .orElse(null);
 
         if (existingUser != null) {
-            String roleName = existingUser.getRoles().stream()
-                    .findFirst()
-                    .map(Enum::name)
-                    .orElse("CUSTOMER");
-
-            return new AuthResponse(
-                    jwtService.generateToken(existingUser.getUsername()),
-                    existingUser.getUsername(),
-                    roleName);
+            // Ensure customer record exists if role is customer
+            if (existingUser.getRoles().contains(Role.CUSTOMER)) {
+                customers.findByUserId(existingUser.getId()).orElseGet(() -> {
+                    String fName = (request.firstName() != null && !request.firstName().isBlank())
+                            ? request.firstName()
+                            : existingUser.getUsername();
+                    String lName = (request.lastName() != null) ? request.lastName() : "";
+                    return customers.save(new Customer(existingUser, fName, lName, request.phone()));
+                });
+            }
+            return toAuthResponse(existingUser);
         }
 
         // 2. Resolve Role (defaults to CUSTOMER)
@@ -113,9 +119,30 @@ public class AuthService {
             customers.save(customer);
         }
 
+        return toAuthResponse(savedUser);
+    }
+
+    private AuthResponse toAuthResponse(AppUser user) {
+        Customer customer = customers.findByUserId(user.getId()).orElse(null);
+        String fName = customer != null ? customer.getFirstName() : user.getUsername();
+        String lName = customer != null ? customer.getLastName() : "";
+        String phone = customer != null ? customer.getPhone() : null;
+        Long customerId = customer != null ? customer.getId() : null;
+
+        Set<String> roleNames = user.getRoles().stream()
+                .map(Enum::name)
+                .collect(Collectors.toSet());
+        String primaryRole = roleNames.stream().findFirst().orElse("CUSTOMER");
+
         return new AuthResponse(
-                jwtService.generateToken(savedUser.getUsername()),
-                savedUser.getUsername(),
-                role.name());
+                jwtService.generateToken(user.getUsername()),
+                user.getUsername(),
+                user.getEmail(),
+                primaryRole,
+                roleNames,
+                customerId,
+                fName,
+                lName,
+                phone);
     }
 }

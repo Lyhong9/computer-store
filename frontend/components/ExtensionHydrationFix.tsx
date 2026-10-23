@@ -54,10 +54,27 @@ if (typeof window !== "undefined") {
       if (isExtensionError(undefined, message, stack)) {
         event.preventDefault();
         event.stopImmediatePropagation();
+        event.stopPropagation();
       }
     },
     true
   );
+
+  const prevOnUnhandledRejection = window.onunhandledrejection;
+  window.onunhandledrejection = function (event: PromiseRejectionEvent) {
+    const reason = event?.reason;
+    const stack = typeof reason === "object" ? reason?.stack : "";
+    const message = typeof reason === "object" ? reason?.message : String(reason);
+
+    if (isExtensionError(undefined, message, stack)) {
+      event?.preventDefault?.();
+      return true;
+    }
+    if (prevOnUnhandledRejection) {
+      return prevOnUnhandledRejection.call(window, event);
+    }
+    return false;
+  };
 
   // 3. Fallback window.onerror handler
   const prevOnError = window.onerror;

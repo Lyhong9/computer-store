@@ -37,7 +37,7 @@ public class CatalogDataInitializer {
                 log.info("Checking catalog seed data...");
 
                 // 1. Seed Brands
-                Map<String, String> brandData = Map.of(
+                Map<String, String> brandData = new HashMap<>(Map.of(
                         "Apple", "Apple Inc. MacBooks, hardware, and premium accessories",
                         "ASUS ROG", "ASUS Republic of Gamers - laptops and graphics cards",
                         "NVIDIA", "NVIDIA GeForce GPUs, AI accelerators, and graphics architecture",
@@ -46,7 +46,9 @@ public class CatalogDataInitializer {
                         "Corsair", "High-performance gaming memory, cooling, and power supplies",
                         "Logitech", "Industry-leading esports peripherals, keyboards, and mice",
                         "Dell", "Dell workstations, precision laptops, and UltraSharp displays"
-                );
+                ));
+                brandData.put("Canon", "Canon professional printers, imaging, and multi-function hardware");
+                brandData.put("Samsung", "Samsung Electronics, displays, and mobile devices");
 
                 Map<String, Brand> brands = new HashMap<>();
                 for (Map.Entry<String, String> entry : brandData.entrySet()) {
@@ -144,6 +146,19 @@ public class CatalogDataInitializer {
                         List.of("https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80"),
                         false, null, new BigDecimal("4.9"), 22, 40, categories.get("Accessories"), brands.get("Corsair"));
 
+                seedProduct(productRepo, "CANON-PIXMA-AIO", "Canon PIXMA - All-in-One Printer",
+                        "Wireless multi-function color photo printer, borderless printing, auto duplex, mobile printing.",
+                        new BigDecimal("0.10"), new BigDecimal("550.00"),
+                        "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=800&q=80",
+                        List.of("https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=800&q=80"),
+                        true, "SALE", new BigDecimal("5.0"), 110, 15, categories.get("Accessories"), brands.get("Canon"));
+
+                seedProduct(productRepo, "IPHONE-15-PRO-TITAN", "Apple iPhone 15 Pro, 512GB, Titan",
+                        "Aerospace-grade titanium design, Ceramic Shield front, A17 Pro gaming chip with hardware ray tracing.",
+                        new BigDecimal("0.10"), new BigDecimal("1299.00"),
+                        "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&q=80",
+                        List.of("https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&q=80"),
+                        true, "SALE", new BigDecimal("5.0"), 98, 10, categories.get("Mobile"), brands.get("Apple"));
 
                 log.info("Catalog seed check completed. Total products in store: {}", productRepo.count());
             }

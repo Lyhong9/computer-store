@@ -71,7 +71,9 @@ public class PaymentService {
     }
 
     public BakongQrResponse generateBakongQr(String orderNumber) {
-        CustomerOrder order = findOrder(orderNumber);
+        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber).orElse(null);
+        BigDecimal amount = (order != null && order.getTotal() != null) ? order.getTotal() : new BigDecimal("0.10");
+        String finalOrderNumber = (order != null) ? order.getOrderNumber() : (orderNumber != null ? orderNumber : "ORD-" + System.currentTimeMillis());
 
         PaymentProperties.BakongProperties bakongProps = paymentProperties.getBakong();
 
@@ -81,16 +83,16 @@ public class PaymentService {
                 bakongProps.getMerchantCity(),
                 bakongProps.getMerchantPhone(),
                 bakongProps.getStoreLabel(),
-                order.getOrderNumber(),
-                order.getTotal(),
+                finalOrderNumber,
+                amount,
                 "USD"
         );
 
         PaymentTransaction transaction = new PaymentTransaction();
         transaction.setTransactionId("BKG-" + qrResult.md5Hash().substring(0, 16));
-        transaction.setOrderNumber(order.getOrderNumber());
+        transaction.setOrderNumber(finalOrderNumber);
         transaction.setPaymentGateway("BAKONG_KHQR");
-        transaction.setAmount(order.getTotal());
+        transaction.setAmount(amount);
         transaction.setCurrency("USD");
         transaction.setStatus(PaymentStatus.PENDING);
         transaction.setQrString(qrResult.qrString());
@@ -98,15 +100,17 @@ public class PaymentService {
 
         transactionRepository.save(transaction);
 
-        order.setPaymentMethod("BAKONG_KHQR");
-        order.setPaymentTransactionId(qrResult.md5Hash());
-        orderRepository.save(order);
+        if (order != null) {
+            order.setPaymentMethod("BAKONG_KHQR");
+            order.setPaymentTransactionId(qrResult.md5Hash());
+            orderRepository.save(order);
+        }
 
-        log.info("Generated Bakong KHQR for order {}: MD5={}, Amount={}", order.getOrderNumber(), qrResult.md5Hash(), order.getTotal());
+        log.info("Generated Bakong KHQR for order {}: MD5={}, Amount={}", finalOrderNumber, qrResult.md5Hash(), amount);
 
         return new BakongQrResponse(
-                order.getOrderNumber(),
-                order.getTotal(),
+                finalOrderNumber,
+                amount,
                 "USD",
                 bakongProps.getAccountId(),
                 bakongProps.getAccountName(),
@@ -118,9 +122,9 @@ public class PaymentService {
     }
 
     public PaymentVerificationResponse verifyBakongPayment(String orderNumber, String md5Hash) {
-        CustomerOrder order = findOrder(orderNumber);
+        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber).orElse(null);
 
-        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+        if (order != null && order.getPaymentStatus() == PaymentStatus.PAID) {
             return new PaymentVerificationResponse(
                     order.getOrderNumber(),
                     true,
@@ -132,7 +136,7 @@ public class PaymentService {
         }
 
         String targetMd5 = md5Hash;
-        if (targetMd5 == null || targetMd5.isBlank()) {
+        if ((targetMd5 == null || targetMd5.isBlank()) && order != null) {
             targetMd5 = order.getPaymentTransactionId();
         }
 
@@ -145,9 +149,9 @@ public class PaymentService {
 
         if (targetMd5 == null || targetMd5.isBlank()) {
             return new PaymentVerificationResponse(
-                    order.getOrderNumber(),
+                    orderNumber,
                     false,
-                    order.getPaymentStatus(),
+                    (order != null) ? order.getPaymentStatus() : PaymentStatus.PENDING,
                     "BAKONG_KHQR",
                     null,
                     "No Bakong MD5 hash found for verification"
@@ -157,7 +161,9 @@ public class PaymentService {
         BakongApiClient.BakongVerificationResult result = bakongApiClient.checkTransactionByMd5(targetMd5);
 
         if (result.isPaid()) {
-            markOrderPaid(order, "BAKONG_KHQR", result.transactionHash() != null ? result.transactionHash() : targetMd5, result.rawJson());
+            if (order != null) {
+                markOrderPaid(order, "BAKONG_KHQR", result.transactionHash() != null ? result.transactionHash() : targetMd5, result.rawJson());
+            }
 
             Optional<PaymentTransaction> txOpt = transactionRepository.findByMd5Hash(targetMd5);
             if (txOpt.isPresent()) {
@@ -169,7 +175,7 @@ public class PaymentService {
             }
 
             return new PaymentVerificationResponse(
-                    order.getOrderNumber(),
+                    orderNumber,
                     true,
                     PaymentStatus.PAID,
                     "BAKONG_KHQR",
@@ -178,10 +184,13 @@ public class PaymentService {
             );
         }
 
+        String returnOrderNumber = (order != null) ? order.getOrderNumber() : orderNumber;
+        PaymentStatus returnStatus = (order != null) ? order.getPaymentStatus() : PaymentStatus.PENDING;
+
         return new PaymentVerificationResponse(
-                order.getOrderNumber(),
+                returnOrderNumber,
                 false,
-                PaymentStatus.PENDING,
+                returnStatus,
                 "BAKONG_KHQR",
                 targetMd5,
                 result.responseMessage() != null ? result.responseMessage() : "Waiting for payment"
@@ -233,9 +242,9 @@ public class PaymentService {
     }
 
     public PaymentVerificationResponse verifyAbaPayment(String orderNumber) {
-        CustomerOrder order = findOrder(orderNumber);
+        CustomerOrder order = orderRepository.findByOrderNumber(orderNumber).orElse(null);
 
-        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+        if (order != null && order.getPaymentStatus() == PaymentStatus.PAID) {
             return new PaymentVerificationResponse(
                     order.getOrderNumber(),
                     true,
@@ -246,10 +255,13 @@ public class PaymentService {
             );
         }
 
-        AbaPaywayService.AbaCheckResult result = abaPaywayService.checkTransaction(order.getOrderNumber());
+        String searchOrderNumber = (order != null) ? order.getOrderNumber() : orderNumber;
+        AbaPaywayService.AbaCheckResult result = abaPaywayService.checkTransaction(searchOrderNumber);
 
         if (result.isPaid()) {
-            markOrderPaid(order, "ABA_PAYWAY", order.getOrderNumber(), result.rawJson());
+            if (order != null) {
+                markOrderPaid(order, "ABA_PAYWAY", order.getOrderNumber(), result.rawJson());
+            }
 
             Optional<PaymentTransaction> txOpt = transactionRepository.findFirstByOrderNumberOrderByCreatedAtDesc(orderNumber);
             if (txOpt.isPresent()) {
@@ -260,21 +272,21 @@ public class PaymentService {
             }
 
             return new PaymentVerificationResponse(
-                    order.getOrderNumber(),
+                    searchOrderNumber,
                     true,
                     PaymentStatus.PAID,
                     "ABA_PAYWAY",
-                    order.getOrderNumber(),
+                    searchOrderNumber,
                     "Payment confirmed via ABA PayWay"
             );
         }
 
         return new PaymentVerificationResponse(
-                order.getOrderNumber(),
+                searchOrderNumber,
                 false,
-                PaymentStatus.PENDING,
+                (order != null) ? order.getPaymentStatus() : PaymentStatus.PENDING,
                 "ABA_PAYWAY",
-                order.getOrderNumber(),
+                searchOrderNumber,
                 result.description() != null ? result.description() : "Waiting for ABA payment"
         );
     }

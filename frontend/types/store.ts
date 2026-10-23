@@ -59,4 +59,6 @@ export interface Order {
   tax: number;
   total: number;
   status: "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED";
+  orderNumber?: string;
+  paymentStatus?: string;
 }
