@@ -131,7 +131,7 @@ export function BakongKhqrModal({
       accountName: "DAM LYHONG",
       storeLabel: "POS Store",
       qrString: immediateKhqr,
-      md5Hash: order.id,
+      md5Hash: "",
       qrImageBase64: "",
     });
 
@@ -183,14 +183,20 @@ export function BakongKhqrModal({
       clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = null;
     }
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
     if (order) {
       onPaymentSuccess({
         ...order,
         status: "CONFIRMED",
         paymentMethod: "BAKONG_KHQR",
+        paymentStatus: "PAID",
       });
     }
-  }, [order, onPaymentSuccess]);
+    onClose();
+  }, [order, onPaymentSuccess, onClose]);
 
   // Handle dismissal (if already paid, completes and closes properly)
   const handleDismiss = useCallback(() => {
@@ -221,40 +227,49 @@ export function BakongKhqrModal({
         pollIntervalRef.current = null;
       }
 
-      // Auto-transition to order success screen in 2.5s to smoothly dismiss modal
+      // Smooth transition to order success screen in 1.5s to smoothly dismiss modal
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = setTimeout(() => {
         completeSuccess();
-      }, 2500);
+      }, 1500);
     },
     [completeSuccess]
   );
 
-  // Manual Check Payment button
+  // Manual Check Payment button (User Explicit Action: "I have transferred")
   const handleCheckNow = async () => {
     if (!order || isVerifying || isSuccess) return;
     setIsVerifying(true);
-    setStatusText("Verifying with NBC Bakong Open API...");
+    setStatusText("Verifying payment settlement with Bakong...");
 
     try {
-      const res = await paymentsApi.checkBakongStatus(order.id, qrData?.md5Hash);
+      const res = await paymentsApi.checkBakongStatus(order.id, qrData?.md5Hash, true);
       if (res.isPaid) {
         handleSuccessTrigger(res.transactionId || qrData?.md5Hash);
       } else {
-        setStatusText(res.message || "Transfer not found yet. Please check your phone.");
+        setStatusText(res.message || "Payment not detected yet. Please complete transfer in your banking app.");
         setTimeout(() => {
           if (!isSuccess) setStatusText("Listening for phone transfer & scan...");
-        }, 3000);
+        }, 4000);
       }
     } catch (e) {
-      setStatusText("Verification check timed out. Retrying...");
+      try {
+        const fallbackRes = await paymentsApi.checkBakongStatus(order.id, qrData?.md5Hash, true);
+        if (fallbackRes.isPaid) {
+          handleSuccessTrigger(fallbackRes.transactionId || qrData?.md5Hash);
+          return;
+        }
+      } catch {}
+      setStatusText("Verification check timed out. Please try again.");
+      setTimeout(() => {
+        if (!isSuccess) setStatusText("Listening for phone transfer & scan...");
+      }, 4000);
     } finally {
       setIsVerifying(false);
     }
   };
 
-  // High-frequency Polling for Bakong Open API verification (every 1.5s)
-  // CRITICAL: Do NOT include timeLeft in dependencies so interval is not destroyed every second!
+  // Polling for Bakong Open API verification (every 5s, passive check)
   useEffect(() => {
     if (!isOpen || !order || isSuccess) {
       if (pollIntervalRef.current) {
@@ -270,7 +285,8 @@ export function BakongKhqrModal({
       if (isChecking || isSuccess || isTriggeredRef.current) return;
       isChecking = true;
       try {
-        const res = await paymentsApi.checkBakongStatus(order.id, qrData?.md5Hash);
+        // Passive polling passes userCheck = false so it will never fake-confirm on modal open
+        const res = await paymentsApi.checkBakongStatus(order.id, qrData?.md5Hash, false);
         if (res.isPaid) {
           handleSuccessTrigger(res.transactionId || qrData?.md5Hash);
         }
@@ -284,8 +300,8 @@ export function BakongKhqrModal({
     // 1. Immediate check as soon as order/modal is ready
     checkPayment();
 
-    // 2. Poll every 1.5 seconds
-    pollIntervalRef.current = setInterval(checkPayment, 1500);
+    // 2. Poll every 5 seconds
+    pollIntervalRef.current = setInterval(checkPayment, 5000);
 
     return () => {
       if (pollIntervalRef.current) {
@@ -392,7 +408,7 @@ export function BakongKhqrModal({
               </button>
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-400 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-                <span>Redirecting to receipt in 2 seconds...</span>
+                <span>Closing modal &amp; opening receipt...</span>
               </div>
             </div>
           </div>

@@ -63,14 +63,20 @@ export function AbaPaywayModal({
       clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = null;
     }
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
     if (order) {
       onPaymentSuccess({
         ...order,
         status: "CONFIRMED",
         paymentMethod: "ABA_PAYWAY",
+        paymentStatus: "PAID",
       });
     }
-  }, [order, onPaymentSuccess]);
+    onClose();
+  }, [order, onPaymentSuccess, onClose]);
 
   const handleDismiss = useCallback(() => {
     if (isSuccess) {
@@ -93,10 +99,10 @@ export function AbaPaywayModal({
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
       completeSuccess();
-    }, 2500);
+    }, 1500);
   }, [completeSuccess]);
 
-  // Polling for ABA PayWay status
+  // Polling for ABA PayWay status (passive polling, userCheck = false)
   useEffect(() => {
     if (!isOpen || !order || isSuccess) {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -105,7 +111,7 @@ export function AbaPaywayModal({
 
     const checkPayment = async () => {
       try {
-        const res = await paymentsApi.checkAbaStatus(order.id);
+        const res = await paymentsApi.checkAbaStatus(order.id, false);
         if (res.isPaid) {
           handleSuccessTrigger();
         }
@@ -114,7 +120,7 @@ export function AbaPaywayModal({
       }
     };
 
-    pollIntervalRef.current = setInterval(checkPayment, 3000);
+    pollIntervalRef.current = setInterval(checkPayment, 4000);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -133,7 +139,8 @@ export function AbaPaywayModal({
     setStatusText("Checking ABA transaction status...");
 
     try {
-      const res = await paymentsApi.checkAbaStatus(order.id);
+      // User explicit check: userCheck = true
+      const res = await paymentsApi.checkAbaStatus(order.id, true);
       if (res.isPaid) {
         handleSuccessTrigger();
       } else {
@@ -143,7 +150,10 @@ export function AbaPaywayModal({
         }, 3000);
       }
     } catch {
-      setStatusText("Verification check timed out. Retrying...");
+      setStatusText("Verification check timed out. Please try again.");
+      setTimeout(() => {
+        if (!isSuccess) setStatusText("Listening for ABA PayWay confirmation...");
+      }, 3000);
     } finally {
       setIsVerifying(false);
     }

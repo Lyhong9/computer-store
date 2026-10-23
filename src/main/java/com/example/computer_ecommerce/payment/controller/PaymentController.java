@@ -39,9 +39,10 @@ public class PaymentController {
     @PostMapping("/bakong/check-status")
     public PaymentVerificationResponse checkBakongStatus(
             @RequestParam String orderNumber,
-            @RequestParam(required = false) String md5Hash
+            @RequestParam(required = false) String md5Hash,
+            @RequestParam(required = false, defaultValue = "false") boolean userCheck
     ) {
-        return paymentService.verifyBakongPayment(orderNumber, md5Hash);
+        return paymentService.verifyBakongPayment(orderNumber, md5Hash, userCheck);
     }
 
     // --- ABA PAYWAY ENDPOINTS ---
@@ -57,8 +58,11 @@ public class PaymentController {
     }
 
     @PostMapping("/aba/check-status/{orderNumber}")
-    public PaymentVerificationResponse checkAbaStatus(@PathVariable String orderNumber) {
-        return paymentService.verifyAbaPayment(orderNumber);
+    public PaymentVerificationResponse checkAbaStatus(
+            @PathVariable String orderNumber,
+            @RequestParam(required = false, defaultValue = "false") boolean userCheck
+    ) {
+        return paymentService.verifyAbaPayment(orderNumber, userCheck);
     }
 
     // --- SIMULATED TEST PAYMENT (DEVELOPMENT / DEMO ACCELERATOR) ---

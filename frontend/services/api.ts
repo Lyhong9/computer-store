@@ -331,9 +331,9 @@ export const paymentsApi = {
     return res.data;
   },
 
-  checkBakongStatus: async (orderNumber: string, md5Hash?: string): Promise<PaymentVerificationResult> => {
+  checkBakongStatus: async (orderNumber: string, md5Hash?: string, userCheck: boolean = false): Promise<PaymentVerificationResult> => {
     const res = await apiClient.post<PaymentVerificationResult>("/api/payments/bakong/check-status", null, {
-      params: { orderNumber, md5Hash: md5Hash || "" },
+      params: { orderNumber, md5Hash: md5Hash || "", userCheck },
     });
     return res.data;
   },
@@ -345,8 +345,10 @@ export const paymentsApi = {
     return res.data;
   },
 
-  checkAbaStatus: async (orderNumber: string): Promise<PaymentVerificationResult> => {
-    const res = await apiClient.post<PaymentVerificationResult>(`/api/payments/aba/check-status/${orderNumber}`);
+  checkAbaStatus: async (orderNumber: string, userCheck: boolean = false): Promise<PaymentVerificationResult> => {
+    const res = await apiClient.post<PaymentVerificationResult>(`/api/payments/aba/check-status/${orderNumber}`, null, {
+      params: { userCheck },
+    });
     return res.data;
   },
 
