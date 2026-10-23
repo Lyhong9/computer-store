@@ -47,9 +47,16 @@ export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
           </div>
 
           <div className="flex justify-between">
-            <span className="text-zinc-400">Payment Method</span>
-            <span className="font-semibold text-zinc-200">{order.paymentMethod}</span>
+            <span className="text-zinc-400">Payment Gateway</span>
+            <span className="font-bold text-zinc-200">
+              {order.paymentMethod === "BAKONG_KHQR"
+                ? "Bakong KHQR (Verified ✓)"
+                : order.paymentMethod === "ABA_PAYWAY"
+                ? "ABA PayWay (Verified ✓)"
+                : order.paymentMethod || "Cash on Delivery"}
+            </span>
           </div>
+
 
           <div className="flex justify-between">
             <span className="text-zinc-400">Shipping To</span>

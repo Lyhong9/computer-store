@@ -16,8 +16,9 @@ export interface Product {
   images?: string[];
   primaryImage?: string;
   rating?: number;
+  reviewCount?: number;
   soldCount?: number;
-  badge?: "SALE" | "HOT" | "NEW";
+  badge?: "SALE" | "HOT" | "NEW" | string;
   colors?: string[];
 }
 

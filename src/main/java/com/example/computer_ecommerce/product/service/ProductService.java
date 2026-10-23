@@ -9,9 +9,14 @@ import com.example.computer_ecommerce.product.dto.ProductResponse;
 import com.example.computer_ecommerce.product.entity.Product;
 import com.example.computer_ecommerce.product.mapper.ProductMapper;
 import com.example.computer_ecommerce.product.repository.ProductRepository;
+import com.example.computer_ecommerce.product.repository.ProductSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -35,23 +40,70 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> findAll(Long categoryId, Long brandId) {
-        List<Product> result;
-        if (categoryId != null && brandId != null) {
-            result = products.findByCategoryIdAndBrandId(categoryId, brandId);
-        } else if (categoryId != null) {
-            result = products.findByCategoryId(categoryId);
-        } else if (brandId != null) {
-            result = products.findByBrandId(brandId);
-        } else {
-            result = products.findAll();
-        }
+    public List<ProductResponse> findAll(
+            String search,
+            Long categoryId,
+            Long brandId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean featured) {
+
+        Specification<Product> spec = buildSpecification(search, categoryId, brandId, minPrice, maxPrice, featured);
+        List<Product> result = products.findAll(spec);
         return result.stream().map(mapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
+    public List<ProductResponse> findAll(Long categoryId, Long brandId) {
+        return findAll(null, categoryId, brandId, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
     public List<ProductResponse> findAll() {
-        return findAll(null, null);
+        return findAll(null, null, null, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> search(
+            String search,
+            Long categoryId,
+            Long brandId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean featured,
+            Pageable pageable) {
+
+        Specification<Product> spec = buildSpecification(search, categoryId, brandId, minPrice, maxPrice, featured);
+        return products.findAll(spec, pageable).map(mapper::toResponse);
+    }
+
+    private Specification<Product> buildSpecification(
+            String search,
+            Long categoryId,
+            Long brandId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean featured) {
+
+        Specification<Product> spec = Specification.where(ProductSpecification.activeOnly(true));
+
+        if (search != null && !search.isBlank()) {
+            spec = spec.and(ProductSpecification.search(search));
+        }
+        if (categoryId != null) {
+            spec = spec.and(ProductSpecification.categoryId(categoryId));
+        }
+        if (brandId != null) {
+            spec = spec.and(ProductSpecification.brandId(brandId));
+        }
+        if (minPrice != null || maxPrice != null) {
+            spec = spec.and(ProductSpecification.priceBetween(minPrice, maxPrice));
+        }
+        if (featured != null) {
+            spec = spec.and(ProductSpecification.featured(featured));
+        }
+
+        return spec;
     }
 
     @Transactional(readOnly = true)
@@ -99,4 +151,3 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + brandId));
     }
 }
-

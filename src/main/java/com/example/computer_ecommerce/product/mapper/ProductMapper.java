@@ -5,6 +5,9 @@ import com.example.computer_ecommerce.product.dto.ProductResponse;
 import com.example.computer_ecommerce.product.entity.Product;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+
 @Component
 public class ProductMapper {
 
@@ -19,6 +22,27 @@ public class ProductMapper {
         product.setName(request.name());
         product.setDescription(request.description());
         product.setPrice(request.price());
+        if (request.originalPrice() != null) {
+            product.setOriginalPrice(request.originalPrice());
+        }
+        if (request.primaryImage() != null) {
+            product.setPrimaryImage(request.primaryImage());
+        }
+        if (request.images() != null) {
+            product.setImages(new ArrayList<>(request.images()));
+        }
+        if (request.featured() != null) {
+            product.setFeatured(request.featured());
+        }
+        if (request.badge() != null) {
+            product.setBadge(request.badge());
+        }
+        if (request.rating() != null) {
+            product.setRating(request.rating());
+        }
+        if (request.reviewCount() != null) {
+            product.setReviewCount(request.reviewCount());
+        }
         product.setQuantityOnHand(request.quantityOnHand());
     }
 
@@ -34,6 +58,13 @@ public class ProductMapper {
                 product.getName(),
                 product.getDescription(),
                 product.getPrice(),
+                product.getOriginalPrice(),
+                product.getPrimaryImage(),
+                product.getImages(),
+                product.isFeatured(),
+                product.getBadge(),
+                product.getRating() != null ? product.getRating() : BigDecimal.valueOf(5.0),
+                product.getReviewCount() != null ? product.getReviewCount() : 0,
                 product.getQuantityOnHand(),
                 product.isActive(),
                 categoryId,

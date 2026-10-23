@@ -2,7 +2,9 @@ package com.example.computer_ecommerce.product.entity;
 
 import com.example.computer_ecommerce.brand.entity.Brand;
 import com.example.computer_ecommerce.category.entity.Category;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -16,6 +18,8 @@ import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -36,6 +40,29 @@ public class Product {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
+
+    @Column(name = "original_price", precision = 12, scale = 2)
+    private BigDecimal originalPrice;
+
+    @Column(name = "primary_image", length = 500)
+    private String primaryImage;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url", length = 500)
+    private List<String> images = new ArrayList<>();
+
+    @Column(name = "featured")
+    private boolean featured = false;
+
+    @Column(length = 50)
+    private String badge;
+
+    @Column(precision = 2, scale = 1)
+    private BigDecimal rating = BigDecimal.valueOf(5.0);
+
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
 
     @Column(name = "quantity_on_hand", nullable = false)
     private int quantityOnHand;
@@ -65,6 +92,12 @@ public class Product {
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;
+        if (rating == null) {
+            rating = BigDecimal.valueOf(5.0);
+        }
+        if (reviewCount == null) {
+            reviewCount = 0;
+        }
     }
 
     @PreUpdate
@@ -108,6 +141,62 @@ public class Product {
         this.price = price;
     }
 
+    public BigDecimal getOriginalPrice() {
+        return originalPrice;
+    }
+
+    public void setOriginalPrice(BigDecimal originalPrice) {
+        this.originalPrice = originalPrice;
+    }
+
+    public String getPrimaryImage() {
+        return primaryImage;
+    }
+
+    public void setPrimaryImage(String primaryImage) {
+        this.primaryImage = primaryImage;
+    }
+
+    public List<String> getImages() {
+        return images;
+    }
+
+    public void setImages(List<String> images) {
+        this.images = (images != null) ? new ArrayList<>(images) : new ArrayList<>();
+    }
+
+    public boolean isFeatured() {
+        return featured;
+    }
+
+    public void setFeatured(boolean featured) {
+        this.featured = featured;
+    }
+
+    public String getBadge() {
+        return badge;
+    }
+
+    public void setBadge(String badge) {
+        this.badge = badge;
+    }
+
+    public BigDecimal getRating() {
+        return rating;
+    }
+
+    public void setRating(BigDecimal rating) {
+        this.rating = rating;
+    }
+
+    public Integer getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+
     public int getQuantityOnHand() {
         return quantityOnHand;
     }
@@ -148,4 +237,3 @@ public class Product {
         return updatedAt;
     }
 }
-

@@ -7,28 +7,53 @@ export interface CreateProductInput {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   quantityOnHand: number;
   active?: boolean;
   categoryId?: number;
   brandId?: number;
   images?: string[];
+  primaryImage?: string;
   featured?: boolean;
+  badge?: string;
+  rating?: number;
+  reviewCount?: number;
+}
+
+export interface ProductQueryParams {
+  search?: string;
+  categoryId?: number;
+  brandId?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  featured?: boolean;
+  page?: number;
+  size?: number;
 }
 
 export const productsApi = {
-  getAll: async (params?: { categoryId?: number; brandId?: number }): Promise<Product[]> => {
+  getAll: async (params?: ProductQueryParams): Promise<Product[]> => {
     try {
-      const res = await apiClient.get<Product[]>("/api/products", { params });
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        return res.data.map((p) => {
+      const res = await apiClient.get<any>("/api/products", { params });
+      const rawData = Array.isArray(res.data) ? res.data : (res.data?.content || []);
+
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        return rawData.map((p: any) => {
           const sample = INITIAL_PRODUCTS.find((s) => s.sku === p.sku);
           return {
             ...p,
             price: Number(p.price),
+            originalPrice: p.originalPrice ? Number(p.originalPrice) : sample?.originalPrice,
             description: p.description || sample?.description || "",
-            images: p.images && p.images.length > 0 ? p.images : (sample?.images || (p.primaryImage ? [p.primaryImage] : sample?.primaryImage ? [sample.primaryImage] : [])),
-            primaryImage: p.primaryImage || sample?.primaryImage || (sample?.images?.[0] || ""),
+            images:
+              p.images && p.images.length > 0
+                ? p.images
+                : sample?.images || (p.primaryImage ? [p.primaryImage] : []),
+            primaryImage: p.primaryImage || sample?.primaryImage || p.images?.[0] || "",
             featured: p.featured ?? sample?.featured ?? false,
+            badge: p.badge || sample?.badge,
+            rating: p.rating ? Number(p.rating) : sample?.rating || 5.0,
+            reviewCount: p.reviewCount ?? sample?.reviewCount ?? 0,
             specs: p.specs || sample?.specs,
             categoryName: p.categoryName || sample?.categoryName,
             brandName: p.brandName || sample?.brandName,
@@ -58,20 +83,23 @@ export const productsApi = {
       const res = await apiClient.post<Product>("/api/products", data);
       return res.data;
     } catch {
-      // In offline/mock fallback, create local item
       const newProduct: Product = {
         id: Date.now(),
         sku: data.sku,
         name: data.name,
         description: data.description,
         price: data.price,
+        originalPrice: data.originalPrice,
         quantityOnHand: data.quantityOnHand,
         active: data.active ?? true,
         categoryId: data.categoryId,
         brandId: data.brandId,
         images: data.images || [],
-        primaryImage: data.images?.[0],
+        primaryImage: data.primaryImage || data.images?.[0],
         featured: data.featured ?? false,
+        badge: data.badge,
+        rating: data.rating ?? 5.0,
+        reviewCount: data.reviewCount ?? 0,
       };
       return newProduct;
     }
@@ -210,6 +238,126 @@ export const brandsApi = {
     }
   },
 };
+
+export interface CheckoutInput {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  shippingAddress: string;
+  paymentMethod?: string;
+  items: { productId: number; quantity: number }[];
+}
+
+export const ordersApi = {
+  checkout: async (data: CheckoutInput): Promise<Order> => {
+    const res = await apiClient.post<any>("/api/orders/checkout", data);
+    return res.data;
+  },
+
+  getByOrderNumber: async (orderNumber: string): Promise<Order> => {
+    const res = await apiClient.get<any>(`/api/orders/${orderNumber}`);
+    return res.data;
+  },
+
+  getAll: async (page = 0, size = 20): Promise<{ content: Order[]; totalElements: number }> => {
+    const res = await apiClient.get<{ content: Order[]; totalElements: number }>("/api/orders", {
+      params: { page, size },
+    });
+    return res.data;
+  },
+};
+
+export const uploadApi = {
+  uploadImage: async (file: File): Promise<{ url: string; filename: string; size: number }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiClient.post<{ url: string; filename: string; size: number }>(
+      "/api/uploads",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    return res.data;
+  },
+};
+
+export interface BakongQrData {
+  orderNumber: string;
+  amount: number;
+  currency: string;
+  accountId: string;
+  accountName: string;
+  storeLabel: string;
+  qrString: string;
+  md5Hash: string;
+  qrImageBase64: string;
+}
+
+export interface PaymentVerificationResult {
+  orderNumber: string;
+  isPaid: boolean;
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "REFUNDED";
+  paymentGateway: string;
+  transactionId: string;
+  message: string;
+}
+
+export interface AbaCheckoutPayload {
+  purchaseUrl: string;
+  reqTime: string;
+  merchantId: string;
+  tranId: string;
+  amount: string;
+  items: string;
+  shipping: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  type: string;
+  paymentOption: string;
+  returnUrl: string;
+  cancelUrl: string;
+  continueSuccessUrl: string;
+  currency: string;
+  hash: string;
+  formData: Record<string, string>;
+}
+
+export const paymentsApi = {
+  generateBakongQr: async (orderNumber: string): Promise<BakongQrData> => {
+    const res = await apiClient.post<BakongQrData>(`/api/payments/bakong/generate/${orderNumber}`);
+    return res.data;
+  },
+
+  checkBakongStatus: async (orderNumber: string, md5Hash?: string): Promise<PaymentVerificationResult> => {
+    const res = await apiClient.post<PaymentVerificationResult>("/api/payments/bakong/check-status", null, {
+      params: { orderNumber, md5Hash: md5Hash || "" },
+    });
+    return res.data;
+  },
+
+  createAbaCheckout: async (orderNumber: string, paymentOption?: string): Promise<AbaCheckoutPayload> => {
+    const res = await apiClient.post<AbaCheckoutPayload>(`/api/payments/aba/create-checkout/${orderNumber}`, null, {
+      params: { paymentOption: paymentOption || "" },
+    });
+    return res.data;
+  },
+
+  checkAbaStatus: async (orderNumber: string): Promise<PaymentVerificationResult> => {
+    const res = await apiClient.post<PaymentVerificationResult>(`/api/payments/aba/check-status/${orderNumber}`);
+    return res.data;
+  },
+
+  simulateSuccess: async (orderNumber: string, gateway: string = "BAKONG_KHQR"): Promise<PaymentVerificationResult> => {
+    const res = await apiClient.post<PaymentVerificationResult>("/api/payments/simulate-success", null, {
+      params: { orderNumber, gateway },
+    });
+    return res.data;
+  },
+};
+
 
 export const checkBackendHealth = async (): Promise<boolean> => {
   try {

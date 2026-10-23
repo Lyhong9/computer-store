@@ -47,4 +47,22 @@ app:
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
     email: ${ADMIN_EMAIL:}
+  payment:
+    bakong:
+      account-id: ${BAKONG_ACCOUNT_ID:dam_lyhong@bkrt}
+      account-name: ${ACCOUNT_NAME:DAM LYHONG}
+      merchant-city: ${MERCHANT_CITY:Phnom Penh}
+      merchant-phone: ${MERCHANT_PHONE:855968999414}
+      store-label: ${STORE_LABEL:POS Store}
+      api-url: ${BAKONG_API_URL:https://api-bakong.nbc.gov.kh}
+      api-token: ${BAKONG_API_TOKEN:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoiZmQ1MjA5MzYwYjFiNDI3YiJ9LCJpYXQiOjE3ODgxODQxODIsImV4cCI6MTc5NTk2MDE4Mn0.uI0VPq7pUfcBTpgZhGf99f9gmEBRLJVbKSuyUnHLgMI}
+      api-enabled: ${BAKONG_API_ENABLED:true}
+    aba:
+      merchant-id: ${ABA_PAYWAY_MERCHANT_ID:ec477591}
+      api-key: ${ABA_PAYWAY_API_KEY:863a16a886eba42f31ca758eb78c8a4184a003d3}
+      purchase-url: ${ABA_PAYWAY_PURCHASE_URL:https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase}
+      base-url: ${ABA_PAYWAY_BASE_URL:https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments}
+      rsa-public-key: ${ABA_PAYWAY_RSA_PUBLIC_KEY:}
+      rsa-private-key: ${ABA_PAYWAY_RSA_PRIVATE_KEY:}
+
 

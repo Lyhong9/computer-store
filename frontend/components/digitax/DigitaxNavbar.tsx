@@ -231,10 +231,12 @@ export function DigitaxNavbar({
               {/* Shopping Cart Icon with Red Counter Badge */}
               <button
                 type="button"
+                id="header-cart-btn"
                 onClick={() => setIsCartOpen(true)}
                 className="hover:text-[#00e676] transition-colors p-1 relative flex items-center"
                 title="Shopping Cart"
               >
+
                 <ShoppingCart className="w-5 h-5 text-white stroke-[1.8]" />
                 <span className="absolute -top-1.5 -right-2 bg-[#ff2a5f] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
                   {totalItems}

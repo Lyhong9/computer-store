@@ -3,6 +3,7 @@ package com.example.computer_ecommerce.config;
 import com.example.computer_ecommerce.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -34,9 +35,15 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/brands", "/api/brands/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/brands", "/api/brands/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/orders/checkout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/orders/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/orders/**").permitAll()
+                        .requestMatchers("/api/payments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/uploads").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
