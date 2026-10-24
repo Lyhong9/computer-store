@@ -452,11 +452,32 @@ export const customerApi = {
   },
 };
 
-export const authApi = {
-  getMe: async () => {
-    const res = await fetch("/api/auth/me");
-    if (!res.ok) throw new Error("Failed to fetch auth profile");
-    return res.json();
+export interface UploadResponse {
+  url: string;
+  filename: string;
+  size: number;
+}
+
+export const uploadsApi = {
+  uploadFile: async (file: File): Promise<string> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await apiClient.post<UploadResponse>("/api/uploads", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return res.data.url;
+    } catch (err) {
+      console.warn("Upload to backend /api/uploads failed, converting to data URL fallback:", err);
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (e) => reject(e);
+        reader.readAsDataURL(file);
+      });
+    }
   },
 };
 

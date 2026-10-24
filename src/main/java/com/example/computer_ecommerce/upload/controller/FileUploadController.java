@@ -50,7 +50,11 @@ public class FileUploadController {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String fileUrl = "http://localhost:8083/uploads/" + filename;
+            String baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder
+                    .fromCurrentContextPath()
+                    .build()
+                    .toUriString();
+            String fileUrl = baseUrl + "/uploads/" + filename;
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "url", fileUrl,
                     "filename", filename,

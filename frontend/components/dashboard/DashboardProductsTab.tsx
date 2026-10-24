@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Plus,
   Search,
@@ -14,6 +14,9 @@ import {
   Upload,
   AlertCircle,
   RefreshCw,
+  HardDrive,
+  UploadCloud,
+  Loader2,
 } from "lucide-react";
 import {
   useProducts,
@@ -23,6 +26,7 @@ import {
   useUpdateProduct,
   useDeleteProduct,
 } from "@/hooks/useStoreData";
+import { uploadsApi } from "@/services/api";
 import { Product, Category, Brand } from "@/types/store";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -139,6 +143,28 @@ export function DashboardProductsTab({
       newImageUrl: "",
     });
     setIsModalOpen(true);
+  };
+
+  const productFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingProductImg, setIsUploadingProductImg] = useState(false);
+  const [productUploadError, setProductUploadError] = useState<string | null>(null);
+
+  const handleUploadProductImages = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingProductImg(true);
+    setProductUploadError(null);
+    try {
+      const uploadPromises = Array.from(files).map((file) => uploadsApi.uploadFile(file));
+      const urls = await Promise.all(uploadPromises);
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...urls],
+      }));
+    } catch (err: any) {
+      setProductUploadError(err?.message || "Failed to upload image(s) from drive.");
+    } finally {
+      setIsUploadingProductImg(false);
+    }
   };
 
   const handleAddImage = () => {
@@ -617,22 +643,62 @@ export function DashboardProductsTab({
               <span className="text-[11px] text-slate-400">First image is primary cover</span>
             </div>
 
-            <div className="flex gap-2">
-              <Input
-                placeholder="Paste Image URL (https://...)"
-                value={formData.newImageUrl}
-                onChange={(e) => setFormData({ ...formData, newImageUrl: e.target.value })}
-                className="text-xs h-9"
-              />
+            {/* Hidden file input for drive images */}
+            <input
+              ref={productFileInputRef}
+              type="file"
+              multiple
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+              onChange={(e) => {
+                handleUploadProductImages(e.target.files);
+                e.target.value = "";
+              }}
+              className="hidden"
+            />
+
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 type="button"
-                onClick={handleAddImage}
+                onClick={() => productFileInputRef.current?.click()}
+                disabled={isUploadingProductImg}
                 size="sm"
-                className="h-9 px-3 text-xs bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+                className="h-9 px-4 text-xs font-bold gap-2 bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex-shrink-0"
               >
-                Add Image
+                {isUploadingProductImg ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <HardDrive className="w-4 h-4" />
+                    <span>Upload from Drive</span>
+                  </>
+                )}
               </Button>
+
+              <div className="flex-1 flex gap-2">
+                <Input
+                  placeholder="Or paste image URL (https://...)"
+                  value={formData.newImageUrl}
+                  onChange={(e) => setFormData({ ...formData, newImageUrl: e.target.value })}
+                  className="text-xs h-9"
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddImage}
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-3 text-xs flex-shrink-0"
+                >
+                  Add URL
+                </Button>
+              </div>
             </div>
+
+            {productUploadError && (
+              <p className="text-xs text-rose-500 font-medium">{productUploadError}</p>
+            )}
 
             {/* Thumbnail previews */}
             <div className="flex flex-wrap gap-2 pt-1">

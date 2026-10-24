@@ -20,6 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export function DashboardBrandsTab() {
   const { data: brands = [], isLoading, refetch, isFetching } = useBrands();
@@ -211,27 +212,23 @@ export function DashboardBrandsTab() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
-                Logo URL
-              </label>
-              <Input
-                placeholder="https://..."
-                value={form.logo}
-                onChange={(e) => setForm({ ...form, logo: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
-                Official Website
-              </label>
-              <Input
-                placeholder="https://rog.asus.com"
-                value={form.website}
-                onChange={(e) => setForm({ ...form, website: e.target.value })}
-              />
-            </div>
+          <ImageUpload
+            label="Upload Brand Logo from Drive"
+            value={form.logo}
+            onChange={(url) => setForm({ ...form, logo: url })}
+            aspectRatio="square"
+            placeholder="Select a logo image from your drive (PNG, SVG, JPG)"
+          />
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
+              Official Website
+            </label>
+            <Input
+              placeholder="https://rog.asus.com"
+              value={form.website}
+              onChange={(e) => setForm({ ...form, website: e.target.value })}
+            />
           </div>
 
           <div>

@@ -20,6 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export function DashboardCategoriesTab() {
   const { data: categories = [], isLoading, refetch, isFetching } = useCategories();
@@ -215,16 +216,13 @@ export function DashboardCategoriesTab() {
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
-              Banner Image URL
-            </label>
-            <Input
-              placeholder="https://images.unsplash.com/photo-..."
-              value={form.banner}
-              onChange={(e) => setForm({ ...form, banner: e.target.value })}
-            />
-          </div>
+          <ImageUpload
+            label="Upload Banner Image from Drive"
+            value={form.banner}
+            onChange={(url) => setForm({ ...form, banner: url })}
+            aspectRatio="banner"
+            placeholder="Select a banner image from your drive (PNG, JPG, WEBP)"
+          />
 
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">

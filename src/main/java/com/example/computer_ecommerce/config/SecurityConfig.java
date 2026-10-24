@@ -45,8 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users", "/api/users/**").permitAll()
                         .requestMatchers("/api/customers/me").permitAll()
                         .requestMatchers("/api/customers", "/api/customers/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/uploads").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/uploads/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
