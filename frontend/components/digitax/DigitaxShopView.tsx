@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { Product, Category, Brand } from "@/types/store";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, normalizeImageUrl, handleImageError } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 
 interface DigitaxShopViewProps {
@@ -452,8 +452,9 @@ export function DigitaxShopView({
                   onClick={() => onQuickView(p)}
                 >
                   <img
-                    src={p.primaryImage}
+                    src={normalizeImageUrl(p.primaryImage)}
                     alt={p.name}
+                    onError={(e) => handleImageError(e)}
                     className="max-h-full max-w-full object-contain drop-shadow-sm"
                   />
                 </div>

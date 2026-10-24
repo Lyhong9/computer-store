@@ -1,6 +1,7 @@
 import apiClient from "@/lib/axios";
 import { Product, Category, Brand, Order } from "@/types/store";
 import { INITIAL_PRODUCTS, CATEGORIES, BRANDS } from "@/data/sampleProducts";
+import { normalizeImageUrl } from "@/lib/utils";
 
 export interface CreateProductInput {
   sku: string;
@@ -45,11 +46,11 @@ export const productsApi = {
             price: Number(p.price),
             originalPrice: p.originalPrice ? Number(p.originalPrice) : sample?.originalPrice,
             description: p.description || sample?.description || "",
-            images:
-              p.images && p.images.length > 0
-                ? p.images
-                : sample?.images || (p.primaryImage ? [p.primaryImage] : []),
-            primaryImage: p.primaryImage || sample?.primaryImage || p.images?.[0] || "",
+            images: (p.images && p.images.length > 0
+              ? p.images
+              : sample?.images || (p.primaryImage ? [p.primaryImage] : [])
+            ).map(normalizeImageUrl),
+            primaryImage: normalizeImageUrl(p.primaryImage || sample?.primaryImage || p.images?.[0]),
             featured: p.featured ?? sample?.featured ?? false,
             badge: p.badge || sample?.badge,
             rating: p.rating ? Number(p.rating) : sample?.rating || 5.0,
@@ -468,7 +469,7 @@ export const uploadsApi = {
           "Content-Type": "multipart/form-data",
         },
       });
-      return res.data.url;
+      return normalizeImageUrl(res.data.url);
     } catch (err) {
       console.warn("Upload to backend /api/uploads failed, converting to data URL fallback:", err);
       return new Promise<string>((resolve, reject) => {

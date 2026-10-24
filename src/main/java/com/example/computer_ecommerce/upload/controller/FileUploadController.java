@@ -67,10 +67,7 @@ public class FileUploadController {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .build()
-                    .toUriString();
-            String fileUrl = baseUrl + "/uploads/" + filename;
+            String fileUrl = "/uploads/" + filename;
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "url", fileUrl,
@@ -97,7 +94,6 @@ public class FileUploadController {
 
             return ResponseEntity.ok()
                     .contentType(mediaType)
-                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
                     .body(resource);
         } catch (MalformedURLException e) {

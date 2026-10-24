@@ -15,6 +15,7 @@ import {
   Lock,
   Zap,
 } from "lucide-react";
+import { normalizeImageUrl, handleImageError } from "@/lib/utils";
 
 interface CartDrawerProps {
   onProceedToCheckout: () => void;
@@ -99,7 +100,7 @@ export function CartDrawer({ onProceedToCheckout }: CartDrawerProps) {
               </div>
             ) : (
               items.map(({ product, quantity }, idx) => {
-                const itemImage = product.primaryImage || (product.images && product.images[0]);
+                const itemImage = normalizeImageUrl(product.primaryImage || (product.images && product.images[0]));
                 const itemTotal = (product.price * quantity).toFixed(2);
 
                 return (
@@ -113,6 +114,7 @@ export function CartDrawer({ onProceedToCheckout }: CartDrawerProps) {
                         <img
                           src={itemImage}
                           alt={product.name}
+                          onError={(e) => handleImageError(e)}
                           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200"
                         />
                       ) : (

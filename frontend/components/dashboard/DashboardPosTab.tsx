@@ -26,6 +26,7 @@ import { AbaPaywayModal } from "@/components/AbaPaywayModal";
 import { PosReceiptModal } from "@/components/dashboard/PosReceiptModal";
 import { useCart } from "@/context/CartContext";
 import { playScanBeepSound, playPaymentSuccessSound } from "@/lib/sound";
+import { normalizeImageUrl, handleImageError } from "@/lib/utils";
 
 interface PosCartItem {
   product: Product;
@@ -407,8 +408,9 @@ export function DashboardPosTab() {
                   {/* Product Image */}
                   <div className="w-full h-40 bg-slate-50/50 dark:bg-zinc-950/50 rounded-2xl p-2 flex items-center justify-center overflow-hidden mb-3">
                     <img
-                      src={p.primaryImage || "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80"}
+                      src={normalizeImageUrl(p.primaryImage)}
                       alt={p.name}
+                      onError={(e) => handleImageError(e)}
                       className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
                     />
                   </div>
@@ -488,8 +490,9 @@ export function DashboardPosTab() {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-900 p-1 shrink-0 border border-slate-200/60 dark:border-zinc-800 flex items-center justify-center">
                       <img
-                        src={item.product.primaryImage}
+                        src={normalizeImageUrl(item.product.primaryImage)}
                         alt={item.product.name}
+                        onError={(e) => handleImageError(e)}
                         className="max-h-full max-w-full object-contain"
                       />
                     </div>

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { Product } from "@/types/store";
 import { useCart } from "@/context/CartContext";
+import {
+  normalizeImageUrl,
+  handleImageError,
+  DEFAULT_PRODUCT_PLACEHOLDER,
+} from "@/lib/utils";
 
 interface ProductQuickViewModalProps {
   product: Product | null;
@@ -74,17 +79,18 @@ export function ProductQuickViewModal({
         {(() => {
           const imgList =
             product.images && product.images.length > 0
-              ? product.images
+              ? product.images.map(normalizeImageUrl)
               : product.primaryImage
-              ? [product.primaryImage]
-              : ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80"];
+              ? [normalizeImageUrl(product.primaryImage)]
+              : [DEFAULT_PRODUCT_PLACEHOLDER];
 
           return (
             <div className="my-4 space-y-2">
               <div className="relative h-60 sm:h-72 w-full rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800">
                 <img
-                  src={imgList[activeImgIndex < imgList.length ? activeImgIndex : 0]}
+                  src={normalizeImageUrl(imgList[activeImgIndex < imgList.length ? activeImgIndex : 0])}
                   alt={product.name}
+                  onError={(e) => handleImageError(e)}
                   className="w-full h-full object-cover transition-all duration-300"
                 />
                 <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/70 text-white backdrop-blur-md">
@@ -105,7 +111,12 @@ export function ProductQuickViewModal({
                           : "border-zinc-800 opacity-60 hover:opacity-100"
                       }`}
                     >
-                      <img src={img} alt={`Thumb ${i}`} className="w-full h-full object-cover" />
+                      <img
+                        src={normalizeImageUrl(img)}
+                        alt={`Thumb ${i}`}
+                        onError={(e) => handleImageError(e)}
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>

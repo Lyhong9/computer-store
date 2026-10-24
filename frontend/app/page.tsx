@@ -2,6 +2,7 @@ import { getOrSetUserRole } from "@/lib/auth";
 import { StorefrontClient } from "@/components/StorefrontClient";
 import { INITIAL_PRODUCTS, CATEGORIES, BRANDS } from "@/data/sampleProducts";
 import { Brand, Category, Product } from "@/types/store";
+import { normalizeImageUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,9 @@ export default async function Home() {
 
         const mappedBackend = liveProducts.map((p: any) => {
           const sample = INITIAL_PRODUCTS.find((s) => s.sku === p.sku);
-          const customImg = SKU_IMAGE_MAP[p.sku] || sample?.primaryImage || p.primaryImage || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80";
+          const customImg = normalizeImageUrl(
+            SKU_IMAGE_MAP[p.sku] || sample?.primaryImage || p.primaryImage
+          );
           return {
             id: p.id,
             sku: p.sku,

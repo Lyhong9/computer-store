@@ -28,7 +28,12 @@ import {
 } from "@/hooks/useStoreData";
 import { uploadsApi } from "@/services/api";
 import { Product, Category, Brand } from "@/types/store";
-import { formatCurrency } from "@/lib/utils";
+import {
+  formatCurrency,
+  normalizeImageUrl,
+  handleImageError,
+  DEFAULT_PRODUCT_PLACEHOLDER,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -124,12 +129,13 @@ export function DashboardProductsTab({
 
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
-    const existingImages =
+    const existingImages = (
       p.images && p.images.length > 0
         ? p.images
         : p.primaryImage
         ? [p.primaryImage]
-        : [];
+        : []
+    ).map(normalizeImageUrl);
 
     setFormData({
       name: p.name,
@@ -157,9 +163,10 @@ export function DashboardProductsTab({
     try {
       const uploadPromises = Array.from(files).map((file) => uploadsApi.uploadFile(file));
       const urls = await Promise.all(uploadPromises);
+      const normalizedUrls = urls.map(normalizeImageUrl);
       setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...urls],
+        images: [...prev.images, ...normalizedUrls],
       }));
     } catch (err: any) {
       setProductUploadError(err?.message || "Failed to upload image(s) from drive.");
@@ -405,10 +412,10 @@ export function DashboardProductsTab({
               {filteredProducts.map((p) => {
                 const imgList =
                   p.images && p.images.length > 0
-                    ? p.images
+                    ? p.images.map(normalizeImageUrl)
                     : p.primaryImage
-                    ? [p.primaryImage]
-                    : ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80"];
+                    ? [normalizeImageUrl(p.primaryImage)]
+                    : [DEFAULT_PRODUCT_PLACEHOLDER];
 
                 return (
                   <TableRow
@@ -419,8 +426,9 @@ export function DashboardProductsTab({
                     <TableCell className="py-3.5">
                       <div className="flex items-center gap-3">
                         <img
-                          src={imgList[0]}
+                          src={normalizeImageUrl(imgList[0])}
                           alt={p.name}
+                          onError={(e) => handleImageError(e)}
                           className="w-12 h-12 rounded-xl object-cover bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shrink-0"
                         />
                         <div className="min-w-0">
@@ -458,8 +466,9 @@ export function DashboardProductsTab({
                         {imgList.slice(0, 3).map((img, idx) => (
                           <img
                             key={idx}
-                            src={img}
-                            alt={`gallery ${idx + 1}`}
+                            src={normalizeImageUrl(img)}
+                            alt={`${p.name} gallery ${idx + 1}`}
+                            onError={(e) => handleImageError(e)}
                             className="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-zinc-700 hover:scale-125 transition-transform shadow-xs"
                           />
                         ))}
@@ -706,13 +715,10 @@ export function DashboardProductsTab({
                   className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-zinc-700"
                 >
                   <img
-                    src={img}
+                    src={normalizeImageUrl(img)}
                     alt="preview"
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'><rect width='18' height='18' x='3' y='3' rx='2'/><circle cx='9' cy='9' r='2'/><path d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/></svg>";
-                    }}
+                    onError={(e) => handleImageError(e)}
                   />
                   {idx === 0 && (
                     <span className="absolute bottom-0 inset-x-0 bg-blue-600 text-white text-[9px] font-bold text-center py-0.5">

@@ -16,7 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Order } from "@/types/store";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, normalizeImageUrl, handleImageError } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -324,12 +324,12 @@ export function DashboardOrdersTab({
                   >
                     <div className="flex items-center gap-3">
                       <img
-                        src={
+                        src={normalizeImageUrl(
                           it.product.images?.[0] ||
-                          it.product.primaryImage ||
-                          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80"
-                        }
+                          it.product.primaryImage
+                        )}
                         alt={it.product.name}
+                        onError={(e) => handleImageError(e)}
                         className="w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-zinc-700"
                       />
                       <div>
