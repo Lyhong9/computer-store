@@ -8,9 +8,12 @@ import {
   Star,
   ShoppingCart,
   ChevronRight,
+  ChevronDown,
   Filter,
   Check,
   ArrowRight,
+  Search,
+  X,
 } from "lucide-react";
 import { Product, Category, Brand } from "@/types/store";
 import { formatCurrency } from "@/lib/utils";
@@ -22,6 +25,8 @@ interface DigitaxShopViewProps {
   brands: Brand[];
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
+  searchQuery?: string;
+  onSearchChange?: (q: string) => void;
   onQuickView: (p: Product) => void;
   onHomeClick: () => void;
 }
@@ -32,6 +37,8 @@ export function DigitaxShopView({
   brands,
   selectedCategory,
   onSelectCategory,
+  searchQuery = "",
+  onSearchChange,
   onQuickView,
   onHomeClick,
 }: DigitaxShopViewProps) {
@@ -39,7 +46,8 @@ export function DigitaxShopView({
 
   // Filters state
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
-  const [maxPrice, setMaxPrice] = useState<number>(1000);
+  const [minPrice, setMinPrice] = useState<number>(1);
+  const [maxPrice, setMaxPrice] = useState<number>(10000);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("default");
   const [gridCols, setGridCols] = useState<3 | 4>(3);
@@ -52,10 +60,28 @@ export function DigitaxShopView({
     { name: "Black", bg: "bg-slate-900" },
   ];
 
+  // Reset page when search or key filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedBrand]);
+
   // Filtered and Sorted products
   const filteredProducts = useMemo(() => {
+    const q = searchQuery?.trim().toLowerCase() || "";
     return products
       .filter((p) => {
+        // Search Query (name, description, sku, brand, category)
+        if (q) {
+          const nameMatch = p.name?.toLowerCase().includes(q);
+          const descMatch = p.description?.toLowerCase().includes(q);
+          const skuMatch = p.sku?.toLowerCase().includes(q);
+          const brandMatch = p.brandName?.toLowerCase().includes(q);
+          const catMatch = p.categoryName?.toLowerCase().includes(q);
+          if (!nameMatch && !descMatch && !skuMatch && !brandMatch && !catMatch) {
+            return false;
+          }
+        }
+
         // Category
         if (
           selectedCategory !== "all" &&
@@ -73,6 +99,9 @@ export function DigitaxShopView({
         }
 
         // Price
+        if (minPrice > 1 && p.price < minPrice) {
+          return false;
+        }
         if (p.price > maxPrice) {
           return false;
         }
@@ -85,7 +114,7 @@ export function DigitaxShopView({
         if (sortBy === "rating") return (b.rating || 5) - (a.rating || 5);
         return 0; // default
       });
-  }, [products, selectedCategory, selectedBrand, maxPrice, sortBy]);
+  }, [products, searchQuery, selectedCategory, selectedBrand, minPrice, maxPrice, sortBy]);
 
   const itemsPerPage = 12;
   const paginatedProducts = filteredProducts.slice(
@@ -176,20 +205,24 @@ export function DigitaxShopView({
             <div className="space-y-3">
               <input
                 type="range"
-                min="50"
-                max="1000"
+                min="1"
+                max="10000"
                 step="10"
                 value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                onChange={(e) => {
+                  setMaxPrice(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
                 className="w-full accent-blue-600 cursor-pointer"
               />
               <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>$50</span>
-                <span className="text-blue-600">${maxPrice}</span>
+                <span>$1</span>
+                <span className="text-blue-600 font-extrabold text-sm">${maxPrice}</span>
               </div>
               <button
-                onClick={() => {}}
-                className="w-full py-1.5 bg-[#1b74e4] hover:bg-[#155ec2] text-white font-bold text-xs rounded-lg uppercase tracking-wider transition-colors"
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                className="w-full py-1.5 bg-[#1b74e4] hover:bg-[#155ec2] text-white font-bold text-xs rounded-lg uppercase tracking-wider transition-colors shadow-xs"
               >
                 Filter
               </button>
@@ -287,14 +320,14 @@ export function DigitaxShopView({
         <div className="lg:col-span-3 space-y-6">
           {/* Top Control Bar */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* View Grid Switchers */}
-            <div className="flex items-center gap-2">
+            {/* View Grid Switchers & Active Results */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setGridCols(3)}
-                className={`p-1.5 rounded-lg border ${
+                className={`p-1.5 rounded-lg border transition-colors ${
                   gridCols === 3
-                    ? "bg-slate-100 border-slate-300 text-blue-600"
-                    : "border-slate-200 text-slate-400"
+                    ? "bg-slate-100 border-slate-300 text-blue-600 shadow-2xs"
+                    : "border-slate-200 text-slate-400 hover:text-slate-600"
                 }`}
                 title="3 Columns"
               >
@@ -302,46 +335,97 @@ export function DigitaxShopView({
               </button>
               <button
                 onClick={() => setGridCols(4)}
-                className={`p-1.5 rounded-lg border ${
+                className={`p-1.5 rounded-lg border transition-colors ${
                   gridCols === 4
-                    ? "bg-slate-100 border-slate-300 text-blue-600"
-                    : "border-slate-200 text-slate-400"
+                    ? "bg-slate-100 border-slate-300 text-blue-600 shadow-2xs"
+                    : "border-slate-200 text-slate-400 hover:text-slate-600"
                 }`}
                 title="4 Columns"
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
-              <span className="text-xs text-slate-400 ml-2">
-                Showing {filteredProducts.length} results
+              <span className="text-xs text-slate-500 font-medium ml-1">
+                Showing {filteredProducts.length} {filteredProducts.length === 1 ? "result" : "results"}
               </span>
+
+              {searchQuery && (
+                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200/80 font-semibold ml-2">
+                  <span>&ldquo;{searchQuery}&rdquo;</span>
+                  <button
+                    type="button"
+                    onClick={() => onSearchChange?.("")}
+                    className="p-0.5 hover:bg-blue-200/60 rounded-full transition-colors cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-400 font-medium">Sort by:</span>
+            {/* Modern Sort Dropdown */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-400 font-medium">Sort by:</span>
+              <div className="relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-800 outline-none cursor-pointer"
+                  className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl pl-3 pr-8 py-1.5 font-bold text-slate-800 outline-none cursor-pointer text-xs transition-colors"
                 >
                   <option value="default">Default sorting</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="rating">Average Rating</option>
                 </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
           </div>
 
-          {/* Product Cards Grid */}
-          <div
-            className={`grid gap-5 ${
-              gridCols === 4
-                ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            }`}
-          >
+          {/* Product Cards Grid or Empty State */}
+          {filteredProducts.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center shadow-xs my-4 animate-in fade-in-50">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 border border-blue-100/60 flex items-center justify-center text-blue-500">
+                <Search className="w-8 h-8 stroke-[1.8]" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 mb-1.5">
+                No products found
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
+                {searchQuery
+                  ? `We couldn't find any products matching "${searchQuery}". Check your spelling or try another keyword.`
+                  : "No products match the selected filters."}
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                {searchQuery && (
+                  <button
+                    onClick={() => onSearchChange?.("")}
+                    className="px-4 py-2 bg-[#1b74e4] hover:bg-[#155ec2] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                  >
+                    Clear Search
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    onSearchChange?.("");
+                    onSelectCategory("all");
+                    setSelectedBrand("all");
+                    setMaxPrice(10000);
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`grid gap-5 ${
+                gridCols === 4
+                  ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              }`}
+            >
             {paginatedProducts.map((p, idx) => (
               <div
                 key={`shop-prod-${p.id || 'p'}-${idx}-${p.sku || p.name || ''}`}
@@ -416,32 +500,35 @@ export function DigitaxShopView({
                 </button>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 pt-6">
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={`page-btn-${i}`}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${
-                  currentPage === i + 1
-                    ? "bg-[#1b74e4] text-white shadow-md shadow-blue-500/25"
-                    : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-            {currentPage < totalPages && (
-              <button
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold flex items-center justify-center"
-              >
-                →
-              </button>
-            )}
-          </div>
+          {filteredProducts.length > itemsPerPage && (
+            <div className="flex items-center justify-center gap-2 pt-6">
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={`page-btn-${i}`}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${
+                    currentPage === i + 1
+                      ? "bg-[#1b74e4] text-white shadow-md shadow-blue-500/25"
+                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              {currentPage < totalPages && (
+                <button
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold flex items-center justify-center"
+                >
+                  →
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

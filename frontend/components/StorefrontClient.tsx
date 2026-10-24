@@ -70,7 +70,12 @@ export function StorefrontClient({
         selectedCategory={selectedCategory}
         onSelectCategory={handleCategorySelect}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          if (q.trim()) {
+            setActiveTab("shop");
+          }
+        }}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
@@ -111,6 +116,8 @@ export function StorefrontClient({
             brands={brands}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
             onQuickView={setQuickViewProduct}
             onHomeClick={() => setActiveTab("home")}
           />

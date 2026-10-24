@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ModernSelect } from "@/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -131,17 +132,38 @@ export function DashboardOrdersTab({
           </div>
 
           <div className="flex items-center gap-2">
-            <select
+            <ModernSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-slate-800 dark:text-zinc-200 shadow-xs focus:outline-none"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="PROCESSING">Processing</option>
-              <option value="SHIPPED">Shipped</option>
-              <option value="DELIVERED">Delivered</option>
-            </select>
+              onChange={(val) => setStatusFilter(String(val))}
+              size="md"
+              options={[
+                {
+                  value: "ALL",
+                  label: "All Statuses",
+                  icon: <span className="w-2 h-2 rounded-full bg-slate-400" />,
+                },
+                {
+                  value: "CONFIRMED",
+                  label: "Confirmed",
+                  icon: <span className="w-2 h-2 rounded-full bg-blue-500" />,
+                },
+                {
+                  value: "PROCESSING",
+                  label: "Processing",
+                  icon: <span className="w-2 h-2 rounded-full bg-amber-500" />,
+                },
+                {
+                  value: "SHIPPED",
+                  label: "Shipped",
+                  icon: <span className="w-2 h-2 rounded-full bg-purple-500" />,
+                },
+                {
+                  value: "DELIVERED",
+                  label: "Delivered",
+                  icon: <span className="w-2 h-2 rounded-full bg-emerald-500" />,
+                },
+              ]}
+            />
           </div>
         </div>
       </Card>

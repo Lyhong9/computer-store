@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { ModernSelect } from "@/components/ui/select";
 
 interface DashboardOverviewTabProps {
   onAddProduct: () => void;
@@ -61,19 +62,17 @@ export function DashboardOverviewTab({
           </div>
 
           {/* Period selector */}
-          <div className="relative">
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#111827] text-xs font-semibold text-slate-800 dark:text-zinc-200 shadow-xs focus:outline-none cursor-pointer"
-            >
-              <option>Last 30 days</option>
-              <option>Last 7 days</option>
-              <option>This Month</option>
-              <option>This Quarter</option>
-            </select>
-            <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
-          </div>
+          <ModernSelect
+            value={selectedPeriod}
+            onChange={(val) => setSelectedPeriod(String(val))}
+            size="sm"
+            options={[
+              { value: "Last 30 days", label: "Last 30 days" },
+              { value: "Last 7 days", label: "Last 7 days" },
+              { value: "This Month", label: "This Month" },
+              { value: "This Quarter", label: "This Quarter" },
+            ]}
+          />
 
           <Button
             variant="outline"

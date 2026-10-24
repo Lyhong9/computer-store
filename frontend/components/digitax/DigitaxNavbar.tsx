@@ -21,6 +21,8 @@ import {
   Headphones,
   HardDrive,
   Camera,
+  Check,
+  LayoutGrid,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Category } from "@/types/store";
@@ -56,10 +58,12 @@ export function DigitaxNavbar({
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [selectedLang, setSelectedLang] = useState("ENG");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
 
   const categoriesRef = useRef<HTMLDivElement>(null);
+  const searchCategoryRef = useRef<HTMLDivElement>(null);
 
-  // Close menus on outside click
+  // Close menus on outside click and Escape key
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -68,14 +72,33 @@ export function DigitaxNavbar({
       ) {
         setCategoriesMenuOpen(false);
       }
+      if (
+        searchCategoryRef.current &&
+        !searchCategoryRef.current.contains(event.target as Node)
+      ) {
+        setSearchCategoryOpen(false);
+      }
     }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setCategoriesMenuOpen(false);
+        setSearchCategoryOpen(false);
+      }
+    }
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const getCategoryIcon = (name: string) => {
     const n = name.toLowerCase();
-    if (n.includes("laptop")) return <Laptop className="w-4 h-4 text-emerald-500" />;
+    if (n === "all") return <LayoutGrid className="w-3.5 h-3.5 text-blue-500" />;
+    if (n.includes("laptop")) return <Laptop className="w-3.5 h-3.5 text-emerald-500" />;
     if (n.includes("mobile") || n.includes("phone"))
       return <Smartphone className="w-4 h-4 text-blue-500" />;
     if (n.includes("computer") || n.includes("desktop"))
@@ -138,49 +161,146 @@ export function DigitaxNavbar({
             </span>
           </Link>
 
-          {/* Search Bar - White Pill Container */}
+          {/* Search Bar - Modern White Pill Container */}
           <form
             onSubmit={handleSearchSubmit}
-            className="flex-1 max-w-2xl hidden md:flex items-center bg-white rounded-full p-1 pl-4 shadow-md border border-white/20 focus-within:ring-2 focus-within:ring-[#1877f2]/50 transition-all"
+            className="flex-1 max-w-2xl hidden md:flex items-center bg-white rounded-full p-1 pl-1.5 pr-2.5 shadow-md border border-white/20 focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:shadow-lg transition-all"
           >
-            {/* Category Select Inside Pill */}
-            <div className="relative flex items-center pr-3 border-r border-slate-200 shrink-0">
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  onSelectCategory(e.target.value);
-                  setActiveTab("shop");
-                }}
-                className="appearance-none bg-transparent text-xs font-semibold text-slate-700 pr-5 py-1.5 outline-none cursor-pointer hover:text-slate-900"
+            {/* Modern Category Dropdown */}
+            <div className="relative shrink-0" ref={searchCategoryRef}>
+              <button
+                type="button"
+                onClick={() => setSearchCategoryOpen(!searchCategoryOpen)}
+                className="flex items-center gap-2 pl-3.5 pr-3 py-1.5 rounded-full hover:bg-slate-100/90 active:bg-slate-200/80 transition-all text-xs font-semibold text-slate-700 hover:text-slate-900 select-none border-r border-slate-200/80 group cursor-pointer"
+                aria-haspopup="listbox"
+                aria-expanded={searchCategoryOpen}
               >
-                <option value="all" className="text-slate-800">
-                  All Categories
-                </option>
-                {categories.map((c, idx) => (
-                  <option key={`nav-cat-opt-${c.id || idx}-${c.name}`} value={c.name} className="text-slate-800">
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-0 pointer-events-none" />
+                <span className="shrink-0 group-hover:scale-110 transition-transform">
+                  {selectedCategory === "all" ? (
+                    <LayoutGrid className="w-3.5 h-3.5 text-blue-500" />
+                  ) : (
+                    getCategoryIcon(selectedCategory)
+                  )}
+                </span>
+                <span className="max-w-[120px] truncate text-slate-700 font-bold group-hover:text-blue-600 transition-colors">
+                  {selectedCategory === "all" ? "All Categories" : selectedCategory}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                    searchCategoryOpen ? "rotate-180 text-blue-600" : "group-hover:text-slate-600"
+                  }`}
+                />
+              </button>
+
+              {/* Floating Modern Category Dropdown Popover */}
+              {searchCategoryOpen && (
+                <div className="absolute top-[calc(100%+8px)] left-0 z-50 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18),0_4px_16px_rgba(0,0,0,0.06)] border border-slate-100 p-2 animate-in fade-in-0 zoom-in-95 duration-150 origin-top-left">
+                  <div className="flex items-center justify-between px-3 py-1.5 mb-1 border-b border-slate-100 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span>Category</span>
+                    <span className="text-blue-600 font-bold">{categories.length + 1} items</span>
+                  </div>
+
+                  <div className="max-h-[300px] overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
+                    {/* All Categories Option */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectCategory("all");
+                        setActiveTab("shop");
+                        setSearchCategoryOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all group cursor-pointer ${
+                        selectedCategory === "all"
+                          ? "bg-blue-50 text-blue-700 font-bold border border-blue-100"
+                          : "text-slate-700 hover:bg-slate-100/80 hover:text-slate-900"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                            selectedCategory === "all"
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600"
+                          }`}
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                        </div>
+                        <span>All Categories</span>
+                      </div>
+                      {selectedCategory === "all" && (
+                        <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                      )}
+                    </button>
+
+                    {/* Category Options */}
+                    {categories.map((c, idx) => {
+                      const isSelected =
+                        selectedCategory.toLowerCase() === c.name.toLowerCase();
+                      return (
+                        <button
+                          key={`nav-cat-dropdown-${c.id || idx}-${c.name}`}
+                          type="button"
+                          onClick={() => {
+                            onSelectCategory(c.name);
+                            setActiveTab("shop");
+                            setSearchCategoryOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all group cursor-pointer ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-700 font-bold border border-blue-100"
+                              : "text-slate-700 hover:bg-slate-100/80 hover:text-slate-900"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                                isSelected
+                                  ? "bg-blue-600 text-white shadow-xs"
+                                  : "bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600"
+                              }`}
+                            >
+                              {getCategoryIcon(c.name)}
+                            </div>
+                            <span className="truncate max-w-[140px] text-left">{c.name}</span>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Search Input Field */}
-            <input
-              type="text"
-              placeholder="Search For Anything"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 outline-none bg-transparent"
-            />
-
-            {/* Blue Rounded Button 'SEARCH' */}
-            <button
-              type="submit"
-              className="bg-[#1877f2] hover:bg-[#1567d3] active:scale-95 text-white px-6 py-2 text-xs font-bold rounded-full transition-all uppercase tracking-wider shadow-sm shrink-0"
-            >
-              SEARCH
-            </button>
+            {/* Instant Search Input */}
+            <div className="relative flex-1 flex items-center">
+              <Search className="w-4 h-4 text-slate-400 shrink-0 ml-3 mr-1 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search products, brands, models..."
+                value={searchQuery}
+                onChange={(e) => {
+                  onSearchChange(e.target.value);
+                  if (activeTab !== "shop") {
+                    setActiveTab("shop");
+                  }
+                }}
+                className="w-full px-2 py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 outline-none bg-transparent font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange("")}
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0 mr-1 cursor-pointer"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </form>
 
           {/* Right Header Section: Support & Icons */}
@@ -264,21 +384,31 @@ export function DigitaxNavbar({
         <div className="mt-3 md:hidden">
           <form
             onSubmit={handleSearchSubmit}
-            className="flex items-center bg-white rounded-full p-1 pl-3 shadow-md"
+            className="flex items-center bg-white rounded-full p-1 pl-3.5 pr-2 shadow-md border border-white/20 focus-within:ring-2 focus-within:ring-blue-500/40 transition-all"
           >
+            <Search className="w-4 h-4 text-slate-400 shrink-0 mr-1.5" />
             <input
               type="text"
-              placeholder="Search For Anything"
+              placeholder="Search products..."
               value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1 px-2 py-1 text-xs text-slate-800 placeholder:text-slate-400 outline-none bg-transparent"
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+                if (activeTab !== "shop") {
+                  setActiveTab("shop");
+                }
+              }}
+              className="flex-1 px-1 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none bg-transparent font-medium"
             />
-            <button
-              type="submit"
-              className="bg-[#1877f2] text-white px-4 py-1.5 text-[11px] font-bold rounded-full uppercase"
-            >
-              SEARCH
-            </button>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange("")}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </form>
         </div>
       </div>

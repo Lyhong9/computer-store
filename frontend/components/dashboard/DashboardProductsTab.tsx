@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ModernSelect } from "@/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -323,43 +324,46 @@ export function DashboardProductsTab({
           {/* Dropdown Filters */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Category Filter */}
-            <select
+            <ModernSelect
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-slate-800 dark:text-zinc-200 shadow-xs focus:outline-none"
-            >
-              <option value="ALL">All Categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedCategory(String(val))}
+              size="md"
+              options={[
+                { value: "ALL", label: "All Categories" },
+                ...categories.map((c) => ({ value: c.name, label: c.name })),
+              ]}
+            />
 
             {/* Brand Filter */}
-            <select
+            <ModernSelect
               value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-slate-800 dark:text-zinc-200 shadow-xs focus:outline-none"
-            >
-              <option value="ALL">All Brands</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.name}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedBrand(String(val))}
+              size="md"
+              options={[
+                { value: "ALL", label: "All Brands" },
+                ...brands.map((b) => ({ value: b.name, label: b.name })),
+              ]}
+            />
 
             {/* Stock Filter */}
-            <select
+            <ModernSelect
               value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value as any)}
-              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium text-slate-800 dark:text-zinc-200 shadow-xs focus:outline-none"
-            >
-              <option value="ALL">All Stock Levels</option>
-              <option value="IN_STOCK">In Stock (&gt;10)</option>
-              <option value="LOW_STOCK">Low Stock (≤10)</option>
-            </select>
+              onChange={(val) => setStockFilter(val as any)}
+              size="md"
+              options={[
+                { value: "ALL", label: "All Stock Levels" },
+                {
+                  value: "IN_STOCK",
+                  label: "In Stock (>10)",
+                  icon: <span className="w-2 h-2 rounded-full bg-emerald-500" />,
+                },
+                {
+                  value: "LOW_STOCK",
+                  label: "Low Stock (≤10)",
+                  icon: <span className="w-2 h-2 rounded-full bg-rose-500" />,
+                },
+              ]}
+            />
           </div>
         </div>
       </Card>
@@ -558,37 +562,31 @@ export function DashboardProductsTab({
               <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
                 Category
               </label>
-              <select
+              <ModernSelect
                 value={formData.categoryId}
-                onChange={(e) =>
-                  setFormData({ ...formData, categoryId: Number(e.target.value) })
+                onChange={(val) =>
+                  setFormData({ ...formData, categoryId: Number(val) })
                 }
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-medium text-slate-900 dark:text-zinc-100"
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                size="lg"
+                className="w-full"
+                buttonClassName="w-full h-10"
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+              />
             </div>
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
                 Brand
               </label>
-              <select
+              <ModernSelect
                 value={formData.brandId}
-                onChange={(e) =>
-                  setFormData({ ...formData, brandId: Number(e.target.value) })
+                onChange={(val) =>
+                  setFormData({ ...formData, brandId: Number(val) })
                 }
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-medium text-slate-900 dark:text-zinc-100"
-              >
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                size="lg"
+                className="w-full"
+                buttonClassName="w-full h-10"
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              />
             </div>
           </div>
 
