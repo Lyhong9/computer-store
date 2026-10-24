@@ -14,10 +14,12 @@ import {
   ArrowRight,
   Search,
   X,
+  Heart,
 } from "lucide-react";
 import { Product, Category, Brand } from "@/types/store";
 import { formatCurrency, normalizeImageUrl, handleImageError } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface DigitaxShopViewProps {
   products: Product[];
@@ -43,6 +45,7 @@ export function DigitaxShopView({
   onHomeClick,
 }: DigitaxShopViewProps) {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist, totalWishlistItems } = useWishlist();
 
   // Filters state
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
@@ -52,6 +55,7 @@ export function DigitaxShopView({
   const [sortBy, setSortBy] = useState<string>("default");
   const [gridCols, setGridCols] = useState<3 | 4>(3);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
 
   const colors = [
     { name: "Blue", bg: "bg-blue-500" },
@@ -63,13 +67,18 @@ export function DigitaxShopView({
   // Reset page when search or key filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedBrand]);
+  }, [searchQuery, selectedCategory, selectedBrand, wishlistOnly]);
 
   // Filtered and Sorted products
   const filteredProducts = useMemo(() => {
     const q = searchQuery?.trim().toLowerCase() || "";
     return products
       .filter((p) => {
+        // Wishlist Only filter
+        if (wishlistOnly && !isInWishlist(p.id)) {
+          return false;
+        }
+
         // Search Query (name, description, sku, brand, category)
         if (q) {
           const nameMatch = p.name?.toLowerCase().includes(q);
@@ -114,7 +123,7 @@ export function DigitaxShopView({
         if (sortBy === "rating") return (b.rating || 5) - (a.rating || 5);
         return 0; // default
       });
-  }, [products, searchQuery, selectedCategory, selectedBrand, minPrice, maxPrice, sortBy]);
+  }, [products, searchQuery, selectedCategory, selectedBrand, minPrice, maxPrice, sortBy, wishlistOnly, isInWishlist]);
 
   const itemsPerPage = 12;
   const paginatedProducts = filteredProducts.slice(
@@ -152,6 +161,29 @@ export function DigitaxShopView({
         {/* Left Filter Sidebar                                           */}
         {/* ============================================================ */}
         <div className="space-y-8">
+          {/* Wishlist Quick Filter Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setWishlistOnly((prev) => !prev)}
+              className={`w-full py-2.5 px-3 rounded-xl transition-all font-bold flex items-center justify-between text-xs cursor-pointer ${
+                wishlistOnly
+                  ? "bg-rose-500 text-white shadow-md shadow-rose-500/25"
+                  : "bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/70"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Heart className={`w-4 h-4 ${wishlistOnly ? "fill-white text-white" : "text-rose-500"}`} />
+                <span>My Wishlist</span>
+              </div>
+              <span className={`text-[11px] px-2 py-0.5 rounded-full font-black ${
+                wishlistOnly ? "bg-white text-rose-600" : "bg-rose-100 text-rose-600"
+              }`}>
+                {totalWishlistItems}
+              </span>
+            </button>
+          </div>
+
           {/* 1. Categories List */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
             <h3 className="font-extrabold text-xs tracking-wider uppercase text-slate-900 mb-3 pb-2 border-b border-slate-100">
@@ -392,11 +424,21 @@ export function DigitaxShopView({
                 No products found
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
-                {searchQuery
+                {wishlistOnly
+                  ? "You haven't saved any products to your wishlist yet. Click the heart icon on any product to save it here!"
+                  : searchQuery
                   ? `We couldn't find any products matching "${searchQuery}". Check your spelling or try another keyword.`
                   : "No products match the selected filters."}
               </p>
               <div className="flex items-center justify-center gap-3">
+                {wishlistOnly && (
+                  <button
+                    onClick={() => setWishlistOnly(false)}
+                    className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                  >
+                    Show All Products
+                  </button>
+                )}
                 {searchQuery && (
                   <button
                     onClick={() => onSearchChange?.("")}
@@ -411,6 +453,7 @@ export function DigitaxShopView({
                     onSelectCategory("all");
                     setSelectedBrand("all");
                     setMaxPrice(10000);
+                    setWishlistOnly(false);
                   }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
                 >
@@ -431,19 +474,40 @@ export function DigitaxShopView({
                 key={`shop-prod-${p.id || 'p'}-${idx}-${p.sku || p.name || ''}`}
                 className="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between hover:shadow-xl transition-all duration-300 group relative"
               >
-                {/* Badges */}
-                <div className="flex gap-1 mb-2 z-10">
-                  {p.badge && (
-                    <span
-                      className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
-                        p.badge === "HOT"
-                          ? "bg-emerald-500 text-white"
-                          : "bg-rose-500 text-white"
+                {/* Header: Badges & Wishlist Button */}
+                <div className="flex items-center justify-between mb-2 z-10">
+                  <div className="flex gap-1">
+                    {p.badge && (
+                      <span
+                        className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                          p.badge === "HOT"
+                            ? "bg-emerald-500 text-white"
+                            : "bg-rose-500 text-white"
+                        }`}
+                      >
+                        {p.badge}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWishlist(p);
+                    }}
+                    title={isInWishlist(p.id) ? "Remove from wishlist" : "Add to wishlist"}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                      isInWishlist(p.id)
+                        ? "bg-rose-50 text-rose-500 border border-rose-200 hover:bg-rose-100"
+                        : "bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50/50 border border-slate-200/60"
+                    }`}
+                  >
+                    <Heart
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        isInWishlist(p.id) ? "fill-rose-500 text-rose-500 scale-110" : ""
                       }`}
-                    >
-                      {p.badge}
-                    </span>
-                  )}
+                    />
+                  </button>
                 </div>
 
                 {/* Product Image */}

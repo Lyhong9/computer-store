@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
@@ -43,7 +44,9 @@ export default function RootLayout({
           <QueryProvider>
             <ThemeProvider>
               <AuthProvider>
-                <CartProvider>{children}</CartProvider>
+                <CartProvider>
+                  <WishlistProvider>{children}</WishlistProvider>
+                </CartProvider>
               </AuthProvider>
             </ThemeProvider>
           </QueryProvider>

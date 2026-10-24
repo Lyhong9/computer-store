@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Star, ShoppingCart, Eye, Sparkles } from "lucide-react";
+import { Heart, Star, ShoppingCart, Eye, Sparkles } from "lucide-react";
 import { Product } from "@/types/store";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, normalizeImageUrl, handleImageError } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface DigitaxDealsAndProductsProps {
   products: Product[];
@@ -171,21 +172,44 @@ function ProductCardCompact({
   onQuickView: (p: Product) => void;
   onAddToCart: (p: Product) => void;
 }) {
+  const { isInWishlist, toggleWishlist } = useWishlist();
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between hover:shadow-xl transition-all duration-300 group relative">
-      {/* Badge Top Left */}
-      <div className="flex gap-1 mb-2 z-10">
-        {product.badge && (
-          <span
-            className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
-              product.badge === "HOT"
-                ? "bg-emerald-500 text-white"
-                : "bg-rose-500 text-white"
+      {/* Badge Top Left & Wishlist Button Top Right */}
+      <div className="flex items-center justify-between mb-2 z-10">
+        <div className="flex gap-1">
+          {product.badge && (
+            <span
+              className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                product.badge === "HOT"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-rose-500 text-white"
+              }`}
+            >
+              {product.badge}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist(product);
+          }}
+          className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+            isInWishlist(product.id)
+              ? "bg-rose-50 text-rose-500 hover:bg-rose-100 scale-110 shadow-xs"
+              : "text-slate-400 hover:text-rose-500 hover:bg-slate-100 hover:scale-110"
+          }`}
+          title={isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+        >
+          <Heart
+            className={`w-4 h-4 transition-transform ${
+              isInWishlist(product.id) ? "fill-rose-500 text-rose-500 scale-110" : ""
             }`}
-          >
-            {product.badge}
-          </span>
-        )}
+          />
+        </button>
       </div>
 
       {/* Product Image */}
@@ -194,8 +218,9 @@ function ProductCardCompact({
         onClick={() => onQuickView(product)}
       >
         <img
-          src={product.primaryImage}
+          src={normalizeImageUrl(product.primaryImage)}
           alt={product.name}
+          onError={(e) => handleImageError(e)}
           className="max-h-full max-w-full object-contain drop-shadow-sm"
         />
       </div>

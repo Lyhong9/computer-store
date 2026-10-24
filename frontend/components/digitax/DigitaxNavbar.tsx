@@ -25,6 +25,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { Category } from "@/types/store";
 
 interface DigitaxNavbarProps {
@@ -47,6 +48,7 @@ export function DigitaxNavbar({
   setActiveTab,
 }: DigitaxNavbarProps) {
   const { totalItems, setIsCartOpen } = useCart();
+  const { totalWishlistItems, setIsWishlistOpen } = useWishlist();
   const { user } = useUser();
 
   const [categoriesMenuOpen, setCategoriesMenuOpen] = useState(false);
@@ -339,13 +341,21 @@ export function DigitaxNavbar({
               {/* Wishlist Icon */}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveTab("shop");
-                }}
-                className="hover:text-[#00e676] transition-colors p-1 relative"
-                title="Wishlist"
+                id="header-wishlist-btn"
+                onClick={() => setIsWishlistOpen(true)}
+                className="hover:text-[#ff2a5f] transition-colors p-1 relative flex items-center group cursor-pointer"
+                title={`Wishlist (${totalWishlistItems})`}
               >
-                <Heart className="w-5 h-5 text-white stroke-[1.8]" />
+                <Heart
+                  className={`w-5 h-5 text-white stroke-[1.8] group-hover:scale-110 transition-transform ${
+                    totalWishlistItems > 0 ? "text-rose-400 fill-rose-500/40" : ""
+                  }`}
+                />
+                {totalWishlistItems > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-rose-500/30 animate-in zoom-in-50">
+                    {totalWishlistItems}
+                  </span>
+                )}
               </button>
 
               {/* Shopping Cart Icon with Red Counter Badge */}

@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { Star, ShoppingCart, Eye } from "lucide-react";
+import { Star, ShoppingCart, Eye, Heart } from "lucide-react";
 import { Product } from "@/types/store";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, normalizeImageUrl, handleImageError } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface DigitaxFeaturedGradientSectionProps {
   products: Product[];
@@ -16,6 +17,7 @@ export function DigitaxFeaturedGradientSection({
   onQuickView,
 }: DigitaxFeaturedGradientSectionProps) {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Find products for Featured Card
   const iphone15 = products.find((p) => p.sku === "IPHONE-15-PRO-TITAN") || products[3] || products[0];
@@ -45,8 +47,9 @@ export function DigitaxFeaturedGradientSection({
                 <div className="flex flex-col items-center sm:items-start text-center sm:text-left border-b sm:border-b-0 sm:border-r border-slate-100 sm:pr-6 pb-6 sm:pb-0">
                   <div className="w-48 h-56 relative mb-4 cursor-pointer group" onClick={() => onQuickView(iphone15)}>
                     <img
-                      src={iphone15.primaryImage}
+                      src={normalizeImageUrl(iphone15.primaryImage)}
                       alt={iphone15.name}
+                      onError={(e) => handleImageError(e)}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-lg"
                     />
                   </div>
@@ -67,13 +70,27 @@ export function DigitaxFeaturedGradientSection({
                   <div className="font-black text-base text-slate-900 mt-1">
                     {formatCurrency(iphone15.price)}
                   </div>
-                  <button
-                    onClick={() => addToCart(iphone15)}
-                    className="mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-[#1b74e4] hover:bg-[#155ec2] text-white shadow-md flex items-center gap-1.5"
-                  >
-                    <ShoppingCart className="w-3.5 h-3.5" />
-                    <span>Add To Cart</span>
-                  </button>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={() => addToCart(iphone15)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1b74e4] hover:bg-[#155ec2] text-white shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                      <span>Add To Cart</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleWishlist(iphone15)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                        isInWishlist(iphone15.id)
+                          ? "bg-rose-50 text-rose-500 border-rose-200 shadow-xs"
+                          : "bg-slate-50 text-slate-400 border-slate-200 hover:text-rose-500 hover:bg-rose-50"
+                      }`}
+                      title={isInWishlist(iphone15.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                    >
+                      <Heart className={`w-4 h-4 ${isInWishlist(iphone15.id) ? "fill-rose-500 text-rose-500 scale-110" : ""}`} />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -89,8 +106,9 @@ export function DigitaxFeaturedGradientSection({
                       onClick={() => onQuickView(p)}
                     >
                       <img
-                        src={p.primaryImage}
+                        src={normalizeImageUrl(p.primaryImage)}
                         alt={p.name}
+                        onError={(e) => handleImageError(e)}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                       />
                     </div>
@@ -124,6 +142,18 @@ export function DigitaxFeaturedGradientSection({
                         )}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleWishlist(p)}
+                      className={`p-1.5 rounded-full transition-all cursor-pointer shrink-0 ${
+                        isInWishlist(p.id)
+                          ? "text-rose-500 bg-rose-50 scale-110"
+                          : "text-slate-300 hover:text-rose-500 hover:bg-slate-100 opacity-60 group-hover:opacity-100"
+                      }`}
+                      title={isInWishlist(p.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${isInWishlist(p.id) ? "fill-rose-500 text-rose-500" : ""}`} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -147,8 +177,9 @@ export function DigitaxFeaturedGradientSection({
                       </span>
                     </div>
                     <img
-                      src={hpPrinter.primaryImage}
+                      src={normalizeImageUrl(hpPrinter.primaryImage)}
                       alt={hpPrinter.name}
+                      onError={(e) => handleImageError(e)}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-lg"
                     />
                   </div>
@@ -176,13 +207,27 @@ export function DigitaxFeaturedGradientSection({
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => addToCart(hpPrinter)}
-                    className="mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-[#1b74e4] hover:bg-[#155ec2] text-white shadow-md flex items-center gap-1.5"
-                  >
-                    <ShoppingCart className="w-3.5 h-3.5" />
-                    <span>Add To Cart</span>
-                  </button>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={() => addToCart(hpPrinter)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1b74e4] hover:bg-[#155ec2] text-white shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                      <span>Add To Cart</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleWishlist(hpPrinter)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                        isInWishlist(hpPrinter.id)
+                          ? "bg-rose-50 text-rose-500 border-rose-200 shadow-xs"
+                          : "bg-slate-50 text-slate-400 border-slate-200 hover:text-rose-500 hover:bg-rose-50"
+                      }`}
+                      title={isInWishlist(hpPrinter.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                    >
+                      <Heart className={`w-4 h-4 ${isInWishlist(hpPrinter.id) ? "fill-rose-500 text-rose-500 scale-110" : ""}`} />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -198,8 +243,9 @@ export function DigitaxFeaturedGradientSection({
                       onClick={() => onQuickView(p)}
                     >
                       <img
-                        src={p.primaryImage}
+                        src={normalizeImageUrl(p.primaryImage)}
                         alt={p.name}
+                        onError={(e) => handleImageError(e)}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                       />
                     </div>
@@ -224,7 +270,7 @@ export function DigitaxFeaturedGradientSection({
                         {p.name}
                       </h5>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-rose-600">
+                        <span className="text-xs font-extrabold text-blue-600">
                           {formatCurrency(p.price)}
                         </span>
                         {p.originalPrice && (
@@ -234,6 +280,18 @@ export function DigitaxFeaturedGradientSection({
                         )}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleWishlist(p)}
+                      className={`p-1.5 rounded-full transition-all cursor-pointer shrink-0 ${
+                        isInWishlist(p.id)
+                          ? "text-rose-500 bg-rose-50 scale-110"
+                          : "text-slate-300 hover:text-rose-500 hover:bg-slate-100 opacity-60 group-hover:opacity-100"
+                      }`}
+                      title={isInWishlist(p.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${isInWishlist(p.id) ? "fill-rose-500 text-rose-500" : ""}`} />
+                    </button>
                   </div>
                 ))}
               </div>

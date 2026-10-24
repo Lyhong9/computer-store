@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Product } from "@/types/store";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
+import { Heart } from "lucide-react";
 import {
   normalizeImageUrl,
   handleImageError,
@@ -19,6 +21,7 @@ export function ProductQuickViewModal({
   onClose,
 }: ProductQuickViewModalProps) {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -193,12 +196,33 @@ export function ProductQuickViewModal({
               </button>
             </div>
 
+            {/* Wishlist Button */}
+            <button
+              type="button"
+              onClick={() => toggleWishlist(product)}
+              className={`p-3 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                isInWishlist(product.id)
+                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30 shadow-lg shadow-rose-500/20"
+                  : "bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white hover:bg-zinc-700 hover:border-zinc-600"
+              }`}
+              title={isInWishlist(product.id) ? "Remove from Wishlist" : "Save to Wishlist"}
+            >
+              <Heart
+                className={`w-4 h-4 transition-transform ${
+                  isInWishlist(product.id) ? "fill-rose-500 text-rose-500 scale-110" : ""
+                }`}
+              />
+              <span className="text-xs">
+                {isInWishlist(product.id) ? "Saved" : "Wishlist"}
+              </span>
+            </button>
+
             {/* Add Button */}
             <button
               onClick={handleAdd}
               id="quickview-add-to-cart-btn"
               disabled={added}
-              className={`flex-1 sm:flex-none px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 sm:flex-none px-6 py-3 rounded-xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 added
                   ? "bg-emerald-600 text-white"
                   : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30"
