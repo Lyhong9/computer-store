@@ -25,8 +25,10 @@ public class ProductMapper {
         if (request.originalPrice() != null) {
             product.setOriginalPrice(request.originalPrice());
         }
-        if (request.primaryImage() != null) {
+        if (request.primaryImage() != null && !request.primaryImage().isBlank()) {
             product.setPrimaryImage(request.primaryImage());
+        } else if (request.images() != null && !request.images().isEmpty()) {
+            product.setPrimaryImage(request.images().get(0));
         }
         if (request.images() != null) {
             product.setImages(new ArrayList<>(request.images()));

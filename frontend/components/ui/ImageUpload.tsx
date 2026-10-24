@@ -42,8 +42,10 @@ export function ImageUpload({
   const handleFile = async (file: File) => {
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file (PNG, JPG, WEBP, GIF).");
+    const isImageMime = file.type ? file.type.startsWith("image/") : false;
+    const hasImageExt = /\.(jpg|jpeg|png|webp|gif|avif|jfif|svg|bmp)$/i.test(file.name);
+    if (!isImageMime && !hasImageExt) {
+      setError("Please select a valid image file (JPG, PNG, WEBP, AVIF, GIF).");
       return;
     }
 
@@ -163,7 +165,7 @@ export function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+        accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif,.jfif,.svg,.bmp"
         onChange={handleFileInputChange}
         className="hidden"
       />
