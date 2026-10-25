@@ -17,6 +17,10 @@ import {
   Layers,
   ArrowRight,
   ShoppingBag,
+  PauseCircle,
+  PlayCircle,
+  Banknote,
+  DollarSign,
 } from "lucide-react";
 import { Product, Category, Order } from "@/types/store";
 import { productsApi, categoriesApi, ordersApi } from "@/services/api";
@@ -26,12 +30,28 @@ import { AbaPaywayModal } from "@/components/AbaPaywayModal";
 import { PosReceiptModal } from "@/components/dashboard/PosReceiptModal";
 import { useCart } from "@/context/CartContext";
 import { playScanBeepSound, playPaymentSuccessSound } from "@/lib/sound";
-import { normalizeImageUrl, handleImageError } from "@/lib/utils";
+import { normalizeImageUrl, handleImageError, formatCurrency } from "@/lib/utils";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface PosCartItem {
   product: Product;
   quantity: number;
   spec?: string;
+}
+
+interface HeldCart {
+  id: string;
+  label: string;
+  time: string;
+  items: PosCartItem[];
+  discountPercent: number;
 }
 
 export function DashboardPosTab() {
@@ -50,6 +70,11 @@ export function DashboardPosTab() {
   const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
   const [lastCompletedOrder, setLastCompletedOrder] = useState<Order | null>(null);
   const [cashierName, setCashierName] = useState<string>("Dam Lyhong (Cashier #01)");
+
+  // Cash Payment & Hold Cart State
+  const [cashTendered, setCashTendered] = useState<string>("");
+  const [heldCarts, setHeldCarts] = useState<HeldCart[]>([]);
+  const [showHeldModal, setShowHeldModal] = useState<boolean>(false);
 
   // Load products & categories from backend
   useEffect(() => {
@@ -156,6 +181,31 @@ export function DashboardPosTab() {
   const resetOrder = () => {
     setCart([]);
     setDiscountPercent(0);
+    setCashTendered("");
+  };
+
+  const handleHoldCart = () => {
+    if (cart.length === 0) return;
+    const newHeld: HeldCart = {
+      id: `HOLD-${Date.now().toString().slice(-4)}`,
+      label: `Customer #${heldCarts.length + 1}`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      items: [...cart],
+      discountPercent,
+    };
+    setHeldCarts([...heldCarts, newHeld]);
+    resetOrder();
+  };
+
+  const handleResumeCart = (held: HeldCart) => {
+    setCart(held.items);
+    setDiscountPercent(held.discountPercent);
+    setHeldCarts(heldCarts.filter((h) => h.id !== held.id));
+    setShowHeldModal(false);
+  };
+
+  const handleDeleteHeldCart = (id: string) => {
+    setHeldCarts(heldCarts.filter((h) => h.id !== id));
   };
 
   // Decrement product inventory locally
@@ -454,18 +504,44 @@ export function DashboardPosTab() {
         <div className="lg:col-span-4 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5 sticky top-20">
           {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-              Detail Transaction
-            </h2>
-            <button
-              type="button"
-              onClick={resetOrder}
-              disabled={cart.length === 0}
-              className="text-xs font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 disabled:opacity-30 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Reset Order</span>
-            </button>
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                Detail Transaction
+              </h2>
+              {heldCarts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowHeldModal(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline mt-0.5 cursor-pointer"
+                >
+                  <PauseCircle className="w-3.5 h-3.5" />
+                  <span>{heldCarts.length} Held Cart{heldCarts.length > 1 ? "s" : ""}</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleHoldCart}
+                disabled={cart.length === 0}
+                className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2.5 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/40 flex items-center gap-1 disabled:opacity-30 transition-colors cursor-pointer"
+                title="Suspend active order to serve next customer"
+              >
+                <PauseCircle className="w-3.5 h-3.5" />
+                <span>Hold</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={resetOrder}
+                disabled={cart.length === 0}
+                className="text-xs font-bold text-rose-500 hover:text-rose-600 px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 flex items-center gap-1 disabled:opacity-30 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Reset</span>
+              </button>
+            </div>
           </div>
 
           {/* Cart Item Cards List */}
@@ -633,6 +709,65 @@ export function DashboardPosTab() {
             </button>
           </div>
 
+          {/* Cash Change Calculator (only when CASH is selected) */}
+          {paymentMethod === "CASH" && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-2.5 text-xs animate-in fade-in duration-200">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                  <Banknote className="w-4 h-4 text-emerald-600" />
+                  <span>Cash Received (Tendered)</span>
+                </span>
+                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">
+                  Total Due: ${total.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder={total.toFixed(2)}
+                    value={cashTendered}
+                    onChange={(e) => setCashTendered(e.target.value)}
+                    className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-zinc-900 font-mono font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex gap-1">
+                  {[total, 20, 50, 100].map((amt, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCashTendered(amt.toFixed(2))}
+                      className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-300 dark:border-emerald-700 font-bold text-[10px] text-slate-700 dark:text-zinc-200 hover:bg-emerald-100/50 cursor-pointer"
+                    >
+                      {idx === 0 ? "Exact" : `$${amt}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Calculated Change */}
+              {parseFloat(cashTendered) >= total && (
+                <div className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-300 dark:border-emerald-700 flex items-center justify-between">
+                  <span className="font-bold text-slate-700 dark:text-zinc-300">
+                    Change to Customer:
+                  </span>
+                  <div className="text-right">
+                    <span className="font-black text-sm text-emerald-600 block">
+                      ${(parseFloat(cashTendered) - total).toFixed(2)} USD
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {Math.round((parseFloat(cashTendered) - total) * 4100).toLocaleString()} ៛ KHR
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Big Lime-Green Continue Button (Matching User Image) */}
           <button
             type="button"
@@ -732,6 +867,72 @@ export function DashboardPosTab() {
           resetOrder();
         }}
       />
+
+      {/* 6. Held / Suspended Carts Modal */}
+      <Dialog open={showHeldModal} onOpenChange={setShowHeldModal}>
+        <DialogHeader onClose={() => setShowHeldModal(false)}>
+          <DialogTitle>Suspended & Held POS Carts ({heldCarts.length})</DialogTitle>
+          <DialogDescription>
+            Resume an earlier held customer cart to complete checkout.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-2 text-xs">
+          {heldCarts.length === 0 ? (
+            <p className="text-center text-slate-400 py-6">No held carts currently suspended.</p>
+          ) : (
+            heldCarts.map((h) => {
+              const heldTotal = h.items.reduce(
+                (sum, it) => sum + (Number(it.product.price) || 0) * it.quantity,
+                0
+              );
+              return (
+                <div
+                  key={h.id}
+                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-900 dark:text-zinc-100">{h.label}</span>
+                      <span className="font-mono text-[10px] text-slate-400">({h.time})</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {h.items.length} items: {h.items.map((i) => i.product.name).join(", ")}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-sm text-slate-900 dark:text-zinc-100">
+                      ${heldTotal.toFixed(2)}
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => handleResumeCart(h)}
+                      className="h-8 px-3 text-xs font-bold bg-[#c6f052] text-slate-950 hover:bg-[#b5e042]"
+                    >
+                      <PlayCircle className="w-3.5 h-3.5 mr-1" />
+                      Resume
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteHeldCart(h.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowHeldModal(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

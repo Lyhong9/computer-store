@@ -61,4 +61,6 @@ export interface Order {
   status: "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED";
   orderNumber?: string;
   paymentStatus?: string;
+  carrier?: string;
+  trackingNumber?: string;
 }

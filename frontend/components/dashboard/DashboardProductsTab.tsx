@@ -17,6 +17,14 @@ import {
   HardDrive,
   UploadCloud,
   Loader2,
+  Barcode as BarcodeIcon,
+  Download,
+  PackagePlus,
+  CheckSquare,
+  Square,
+  Layers,
+  ArrowUpRight,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   useProducts,
@@ -55,6 +63,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProductBarcodeModal } from "@/components/dashboard/ProductBarcodeModal";
 
 interface DashboardProductsTabProps {
   isModalOpen: boolean;
@@ -79,9 +88,21 @@ export function DashboardProductsTab({
   const [selectedBrand, setSelectedBrand] = useState<string>("ALL");
   const [stockFilter, setStockFilter] = useState<"ALL" | "IN_STOCK" | "LOW_STOCK">("ALL");
 
-  // Edit / Modal state
+  // Selection & Bulk Actions
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<number>>(new Set());
+
+  // Edit / Modals state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<Product | null>(null);
+  const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
+  const [restockProduct, setRestockProduct] = useState<Product | null>(null);
+  const [restockAmount, setRestockAmount] = useState<number>(10);
+
+  // CSV Import State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importParsedList, setImportParsedList] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -106,6 +127,10 @@ export function DashboardProductsTab({
     images: [],
     newImageUrl: "",
   });
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
 
   const openAddModal = () => {
     setEditingProduct(null);
@@ -143,60 +168,68 @@ export function DashboardProductsTab({
       description: p.description || "",
       price: p.price.toString(),
       stock: p.quantityOnHand.toString(),
-      categoryId: p.categoryId || categories[0]?.id || 1,
-      brandId: p.brandId || brands[0]?.id || 1,
+      categoryId:
+        p.categoryId ||
+        categories.find(
+          (c) => c.name.toLowerCase() === (p.categoryName || "").toLowerCase()
+        )?.id ||
+        1,
+      brandId:
+        p.brandId ||
+        brands.find(
+          (b) => b.name.toLowerCase() === (p.brandName || "").toLowerCase()
+        )?.id ||
+        1,
       featured: p.featured || false,
-      images: existingImages,
+      images:
+        existingImages.length > 0
+          ? existingImages
+          : [DEFAULT_PRODUCT_PLACEHOLDER],
       newImageUrl: "",
     });
     setIsModalOpen(true);
   };
 
-  const productFileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingProductImg, setIsUploadingProductImg] = useState(false);
-  const [productUploadError, setProductUploadError] = useState<string | null>(null);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleUploadProductImages = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setIsUploadingProductImg(true);
-    setProductUploadError(null);
+    setUploadingImage(true);
+    setUploadError(null);
+
     try {
-      const uploadPromises = Array.from(files).map((file) => uploadsApi.uploadFile(file));
-      const urls = await Promise.all(uploadPromises);
-      const normalizedUrls = urls.map(normalizeImageUrl);
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...normalizedUrls],
-      }));
+      const url = await uploadsApi.uploadFile(file);
+      if (url) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [url, ...prev.images],
+        }));
+      }
     } catch (err: any) {
-      setProductUploadError(err?.message || "Failed to upload image(s) from drive.");
+      console.error("Failed to upload image:", err);
+      setUploadError(err.message || "Failed to upload image. Please try another file.");
     } finally {
-      setIsUploadingProductImg(false);
+      setUploadingImage(false);
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = "";
+      }
     }
   };
 
-  const handleAddImage = () => {
+  const handleAddImageUrl = () => {
     if (formData.newImageUrl.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, prev.newImageUrl.trim()],
+      setFormData({
+        ...formData,
+        images: [...formData.images, formData.newImageUrl.trim()],
         newImageUrl: "",
-      }));
+      });
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleSetPrimaryImage = (index: number) => {
-    setFormData((prev) => {
-      const selected = prev.images[index];
-      const rest = prev.images.filter((_, i) => i !== index);
-      return { ...prev, images: [selected, ...rest] };
+    setFormData({
+      ...formData,
+      images: formData.images.filter((_, i) => i !== index),
     });
   };
 
@@ -271,8 +304,166 @@ export function DashboardProductsTab({
     return matchesSearch && matchesCategory && matchesBrand && matchesStock;
   });
 
+  // Bulk Selection Handlers
+  const handleSelectAll = () => {
+    if (selectedProductIds.size === filteredProducts.length) {
+      setSelectedProductIds(new Set());
+    } else {
+      setSelectedProductIds(new Set(filteredProducts.map((p) => p.id)));
+    }
+  };
+
+  const handleToggleSelect = (id: number) => {
+    const updated = new Set(selectedProductIds);
+    if (updated.has(id)) {
+      updated.delete(id);
+    } else {
+      updated.add(id);
+    }
+    setSelectedProductIds(updated);
+  };
+
+  const handleBulkRestock = async (amount: number) => {
+    for (const id of Array.from(selectedProductIds)) {
+      const p = products.find((item) => item.id === id);
+      if (p) {
+        await updateProductMutation.mutateAsync({
+          id,
+          data: { quantityOnHand: (p.quantityOnHand || 0) + amount },
+        });
+      }
+    }
+    setSelectedProductIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedProductIds.size} selected products?`)) return;
+    for (const id of Array.from(selectedProductIds)) {
+      await deleteProductMutation.mutateAsync(id);
+    }
+    setSelectedProductIds(new Set());
+  };
+
+  // Quick Restock Single Product
+  const submitSingleRestock = async () => {
+    if (!restockProduct) return;
+    await updateProductMutation.mutateAsync({
+      id: restockProduct.id,
+      data: { quantityOnHand: (restockProduct.quantityOnHand || 0) + restockAmount },
+    });
+    setRestockProduct(null);
+  };
+
+  // CSV Export
+  const exportProductsCsv = () => {
+    if (products.length === 0) return;
+
+    const headers = [
+      "ID",
+      "SKU",
+      "Name",
+      "Category",
+      "Brand",
+      "Price",
+      "Original Price",
+      "Stock",
+      "Featured",
+      "Badge",
+      "Primary Image",
+    ];
+
+    const rows = filteredProducts.map((p) => [
+      p.id,
+      `"${p.sku}"`,
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${p.categoryName || "Hardware"}"`,
+      `"${p.brandName || "TechShop"}"`,
+      p.price,
+      p.originalPrice || "",
+      p.quantityOnHand,
+      p.featured ? "TRUE" : "FALSE",
+      `"${p.badge || ""}"`,
+      `"${p.primaryImage || ""}"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `techshop_products_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // CSV Import
+  const handleCsvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split("\n").filter((l) => l.trim().length > 0);
+      if (lines.length < 2) return;
+
+      const parsed: any[] = [];
+      // Skip header line
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(",").map((p) => p.replace(/^"|"$/g, "").trim());
+        if (parts.length >= 4) {
+          parsed.push({
+            name: parts[2] || parts[0],
+            sku: parts[1] || `SKU-IMP-${Date.now()}-${i}`,
+            categoryName: parts[3] || "Hardware",
+            brandName: parts[4] || "TechShop",
+            price: parseFloat(parts[5]) || 99.99,
+            quantityOnHand: parseInt(parts[7], 10) || 20,
+            description: "Bulk imported component.",
+          });
+        }
+      }
+      setImportParsedList(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  const executeBulkImport = async () => {
+    if (importParsedList.length === 0) return;
+    setIsImporting(true);
+
+    try {
+      for (const item of importParsedList) {
+        await createProductMutation.mutateAsync({
+          name: item.name,
+          sku: item.sku,
+          description: item.description,
+          price: item.price,
+          quantityOnHand: item.quantityOnHand,
+          categoryId: categories[0]?.id || 1,
+          brandId: brands[0]?.id || 1,
+          images: [
+            "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
+          ],
+        });
+      }
+      setIsImportModalOpen(false);
+      setImportParsedList([]);
+      refetch();
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-300">
+    <div className="space-y-6 animate-in fade-in-50 duration-300 relative pb-16">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -285,11 +476,35 @@ export function DashboardProductsTab({
             </Badge>
           </div>
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-            Manage hardware products, inventory stock, and multiple image galleries.
+            Manage hardware products, print warehouse barcode labels, and batch import/export CSV.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* CSV Import */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsImportModalOpen(true)}
+            className="text-xs h-9 gap-1.5 text-slate-700 dark:text-zinc-300"
+            title="Import products from CSV spreadsheet"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Import CSV</span>
+          </Button>
+
+          {/* CSV Export */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportProductsCsv}
+            className="text-xs h-9 gap-1.5 text-slate-700 dark:text-zinc-300"
+            title="Export products to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-600" />
+            <span>Export CSV</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -398,7 +613,21 @@ export function DashboardProductsTab({
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40">
-                <TableHead className="w-[300px]">Product</TableHead>
+                <TableHead className="w-10">
+                  <button
+                    type="button"
+                    onClick={handleSelectAll}
+                    className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                    title={selectedProductIds.size === filteredProducts.length ? "Deselect All" : "Select All"}
+                  >
+                    {selectedProductIds.size > 0 && selectedProductIds.size === filteredProducts.length ? (
+                      <CheckSquare className="w-4 h-4 text-blue-600" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </TableHead>
+                <TableHead className="w-[280px]">Product</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Brand</TableHead>
@@ -417,11 +646,32 @@ export function DashboardProductsTab({
                     ? [normalizeImageUrl(p.primaryImage)]
                     : [DEFAULT_PRODUCT_PLACEHOLDER];
 
+                const isSelected = selectedProductIds.has(p.id);
+
                 return (
                   <TableRow
                     key={p.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                    className={`transition-colors ${
+                      isSelected
+                        ? "bg-blue-50/40 dark:bg-blue-950/20"
+                        : "hover:bg-slate-50/80 dark:hover:bg-zinc-800/40"
+                    }`}
                   >
+                    {/* Checkbox */}
+                    <TableCell className="w-10 py-3.5">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelect(p.id)}
+                        className="p-1 rounded text-slate-400 hover:text-blue-600 cursor-pointer"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                      </button>
+                    </TableCell>
+
                     {/* Product Cell */}
                     <TableCell className="py-3.5">
                       <div className="flex items-center gap-3">
@@ -432,7 +682,7 @@ export function DashboardProductsTab({
                           className="w-12 h-12 rounded-xl object-cover bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shrink-0"
                         />
                         <div className="min-w-0">
-                          <span className="font-bold text-slate-900 dark:text-zinc-100 block text-xs truncate max-w-[220px]">
+                          <span className="font-bold text-slate-900 dark:text-zinc-100 block text-xs truncate max-w-[200px]">
                             {p.name}
                           </span>
                           {p.featured && (
@@ -499,24 +749,47 @@ export function DashboardProductsTab({
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell className="text-right space-x-2">
+                    <TableCell className="text-right space-x-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setRestockProduct(p);
+                          setRestockAmount(10);
+                        }}
+                        title="Quick Restock Inventory"
+                        className="h-8 text-xs font-semibold px-2.5 text-slate-700 dark:text-zinc-300"
+                      >
+                        <PackagePlus className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                        <span className="hidden xl:inline">Restock</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setBarcodeProduct(p)}
+                        title="Print SKU Barcode Label"
+                        className="h-8 text-xs font-semibold px-2.5 text-slate-700 dark:text-zinc-300"
+                      >
+                        <BarcodeIcon className="w-3.5 h-3.5 text-purple-600" />
+                      </Button>
+
                       <Button
                         size="sm"
                         variant="secondary"
                         onClick={() => openEditModal(p)}
-                        className="h-8 text-xs font-semibold px-3"
+                        className="h-8 text-xs font-semibold px-2.5"
                       >
-                        <Edit2 className="w-3.5 h-3.5 mr-1" />
-                        Edit
+                        <Edit2 className="w-3.5 h-3.5" />
                       </Button>
+
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => setDeleteCandidate(p)}
-                        className="h-8 text-xs font-semibold px-3"
+                        className="h-8 text-xs font-semibold px-2.5"
                       >
-                        <Trash2 className="w-3.5 h-3.5 mr-1" />
-                        Delete
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -526,6 +799,53 @@ export function DashboardProductsTab({
           </Table>
         )}
       </Card>
+
+      {/* Sticky Bulk Action Bar */}
+      {selectedProductIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 text-white dark:bg-zinc-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-4 animate-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2 pr-3 border-r border-slate-700">
+            <span className="w-6 h-6 rounded-full bg-blue-500 text-white font-black text-xs flex items-center justify-center">
+              {selectedProductIds.size}
+            </span>
+            <span className="text-xs font-bold text-slate-200">
+              Selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleBulkRestock(10)}
+              className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              +10 Stock All
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleBulkRestock(50)}
+              className="h-8 px-3 text-xs font-bold bg-emerald-700 hover:bg-emerald-600 text-white"
+            >
+              +50 Stock All
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              className="h-8 px-3 text-xs font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              Delete Selected
+            </Button>
+          </div>
+
+          <button
+            onClick={() => setSelectedProductIds(new Set())}
+            className="text-xs text-slate-400 hover:text-white underline pl-2"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Add / Edit Product Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -602,13 +922,13 @@ export function DashboardProductsTab({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
-                Price (USD) *
+                Selling Price ($) *
               </label>
               <Input
                 required
                 type="number"
                 step="0.01"
-                placeholder="e.g. 1999.00"
+                placeholder="999.00"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               />
@@ -620,7 +940,7 @@ export function DashboardProductsTab({
               <Input
                 required
                 type="number"
-                placeholder="e.g. 25"
+                placeholder="20"
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
               />
@@ -629,140 +949,120 @@ export function DashboardProductsTab({
 
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
-              Description
+              Specifications & Overview
             </label>
             <textarea
-              rows={3}
-              placeholder="Detailed specifications, performance metrics, and hardware features..."
+              rows={2}
+              className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-xs outline-none focus:ring-2 focus:ring-blue-600"
+              placeholder="e.g. Intel Core i9-14900HX, RTX 4080 12GB, 32GB DDR5 RAM, 1TB NVMe SSD"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 text-sm text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Multiple Image Gallery Manager */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800 space-y-3">
+          {/* Multiple Image Gallery Management */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-blue-600" />
-                Image Gallery ({formData.images.length})
+              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                Product Image Gallery ({formData.images.length})
               </label>
-              <span className="text-[11px] text-slate-400">First image is primary cover</span>
+              <span className="text-[11px] text-slate-400">
+                First image acts as primary thumbnail
+              </span>
             </div>
 
-            {/* Hidden file input for drive images */}
-            <input
-              ref={productFileInputRef}
-              type="file"
-              multiple
-              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif,.jfif,.svg,.bmp"
-              onChange={(e) => {
-                handleUploadProductImages(e.target.files);
-                e.target.value = "";
-              }}
-              className="hidden"
-            />
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                type="button"
-                onClick={() => productFileInputRef.current?.click()}
-                disabled={isUploadingProductImg}
-                size="sm"
-                className="h-9 px-4 text-xs font-bold gap-2 bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex-shrink-0"
+            {/* Direct File Upload from Computer / Google Drive */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-slate-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700">
+              <input
+                ref={imageFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="product-image-file-upload"
+              />
+              <label
+                htmlFor="product-image-file-upload"
+                className="cursor-pointer flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-lg text-xs font-bold text-slate-700 dark:text-zinc-200 transition-colors shadow-xs"
               >
-                {isUploadingProductImg ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Uploading...</span>
-                  </>
+                {uploadingImage ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                 ) : (
-                  <>
-                    <HardDrive className="w-4 h-4" />
-                    <span>Upload from Drive</span>
-                  </>
+                  <HardDrive className="w-4 h-4 text-blue-600" />
                 )}
-              </Button>
-
-              <div className="flex-1 flex gap-2">
-                <Input
-                  placeholder="Or paste image URL (https://...)"
-                  value={formData.newImageUrl}
-                  onChange={(e) => setFormData({ ...formData, newImageUrl: e.target.value })}
-                  className="text-xs h-9"
-                />
-                <Button
-                  type="button"
-                  onClick={handleAddImage}
-                  size="sm"
-                  variant="outline"
-                  className="h-9 px-3 text-xs flex-shrink-0"
-                >
-                  Add URL
-                </Button>
-              </div>
+                <span>{uploadingImage ? "Uploading Image..." : "Upload from Computer / Drive"}</span>
+              </label>
+              <span className="text-[11px] text-slate-500 text-center sm:text-left">
+                Supports JPG, PNG, WEBP, GIF up to 10MB
+              </span>
             </div>
 
-            {productUploadError && (
-              <p className="text-xs text-rose-500 font-medium">{productUploadError}</p>
+            {uploadError && (
+              <p className="text-xs text-rose-500 font-semibold">{uploadError}</p>
             )}
 
-            {/* Thumbnail previews */}
-            <div className="flex flex-wrap gap-2 pt-1">
+            {/* Add Image URL input */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Or paste external image URL (e.g. https://...)"
+                value={formData.newImageUrl}
+                onChange={(e) => setFormData({ ...formData, newImageUrl: e.target.value })}
+                className="text-xs h-9"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddImageUrl}
+                className="h-9 px-3 text-xs"
+              >
+                Add URL
+              </Button>
+            </div>
+
+            {/* Thumbnail Previews */}
+            <div className="flex flex-wrap gap-2.5 pt-1">
               {formData.images.map((img, idx) => (
                 <div
                   key={idx}
-                  className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-zinc-700"
+                  className="relative group w-16 h-16 rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden bg-slate-100 dark:bg-zinc-800"
                 >
                   <img
                     src={normalizeImageUrl(img)}
-                    alt="preview"
-                    className="w-full h-full object-cover"
+                    alt={`Preview ${idx}`}
                     onError={(e) => handleImageError(e)}
+                    className="w-full h-full object-cover"
                   />
                   {idx === 0 && (
-                    <span className="absolute bottom-0 inset-x-0 bg-blue-600 text-white text-[9px] font-bold text-center py-0.5">
-                      PRIMARY
+                    <span className="absolute bottom-0 inset-x-0 bg-blue-600 text-white text-[9px] text-center font-bold">
+                      Main
                     </span>
                   )}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                    {idx !== 0 && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetPrimaryImage(idx)}
-                        title="Set as Primary"
-                        className="p-1 rounded bg-white text-slate-900 hover:bg-blue-50"
-                      >
-                        <Check className="w-3 h-3 text-blue-600" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(idx)}
-                      title="Remove"
-                      className="p-1 rounded bg-rose-600 text-white hover:bg-rose-500"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-xs"
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-2">
             <input
               type="checkbox"
-              id="featured-check"
+              id="featured-checkbox"
               checked={formData.featured}
               onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-zinc-700"
+              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
             />
             <label
-              htmlFor="featured-check"
+              htmlFor="featured-checkbox"
               className="text-xs font-semibold text-slate-700 dark:text-zinc-300 cursor-pointer"
             >
-              Highlight as Featured Hardware on Storefront
+              Highlight as Featured Hardware on Homepage
             </label>
           </div>
 
@@ -777,15 +1077,19 @@ export function DashboardProductsTab({
             <Button
               type="submit"
               disabled={createProductMutation.isPending || updateProductMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold"
+              className="bg-blue-600 text-white"
             >
-              {editingProduct ? "Save Changes" : "Create Product"}
+              {createProductMutation.isPending || updateProductMutation.isPending
+                ? "Saving..."
+                : editingProduct
+                ? "Update Product"
+                : "Create Product"}
             </Button>
           </DialogFooter>
         </form>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Modal */}
       <Dialog
         open={!!deleteCandidate}
         onOpenChange={(open) => !open && setDeleteCandidate(null)}
@@ -819,6 +1123,142 @@ export function DashboardProductsTab({
           </Button>
         </DialogFooter>
       </Dialog>
+
+      {/* Quick Restock Modal */}
+      <Dialog
+        open={!!restockProduct}
+        onOpenChange={(open) => !open && setRestockProduct(null)}
+      >
+        <DialogHeader onClose={() => setRestockProduct(null)}>
+          <DialogTitle>Quick Restock Inventory</DialogTitle>
+          <DialogDescription>
+            Add inventory stock units for {restockProduct?.name} ({restockProduct?.sku})
+          </DialogDescription>
+        </DialogHeader>
+
+        {restockProduct && (
+          <div className="space-y-4 py-2 text-xs">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+              <span className="text-slate-500">Current Stock Level:</span>
+              <span className="font-extrabold text-sm text-slate-900 dark:text-zinc-100">
+                {restockProduct.quantityOnHand} units
+              </span>
+            </div>
+
+            <div>
+              <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">
+                Units to Add (+):
+              </label>
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {[10, 25, 50, 100].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setRestockAmount(amt)}
+                    className={`py-2 rounded-xl font-bold border text-xs transition-colors ${
+                      restockAmount === amt
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-300 dark:bg-emerald-950/40"
+                        : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    +{amt}
+                  </button>
+                ))}
+              </div>
+
+              <Input
+                type="number"
+                value={restockAmount}
+                onChange={(e) => setRestockAmount(parseInt(e.target.value, 10) || 0)}
+                className="text-xs h-9 font-bold"
+              />
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setRestockProduct(null)}>
+            Cancel
+          </Button>
+          <Button onClick={submitSingleRestock} className="bg-emerald-600 text-white font-bold">
+            Confirm Restock
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* CSV Import Modal */}
+      <Dialog
+        open={isImportModalOpen}
+        onOpenChange={(open) => !open && setIsImportModalOpen(false)}
+      >
+        <DialogHeader onClose={() => setIsImportModalOpen(false)}>
+          <DialogTitle>Bulk Import Products from CSV</DialogTitle>
+          <DialogDescription>
+            Upload a spreadsheet (.csv) containing product specifications to batch-create inventory.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2 text-xs">
+          <div className="p-4 border-2 border-dashed border-slate-200 dark:border-zinc-700 rounded-2xl text-center space-y-2 bg-slate-50 dark:bg-zinc-900/50">
+            <FileSpreadsheet className="w-8 h-8 text-emerald-600 mx-auto" />
+            <p className="font-bold text-slate-800 dark:text-zinc-200">
+              Select CSV Spreadsheet File
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Expected columns: SKU, Name, Category, Brand, Price, Stock
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleCsvFileUpload}
+              className="text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-xs cursor-pointer"
+            />
+          </div>
+
+          {importParsedList.length > 0 && (
+            <div>
+              <p className="font-bold text-slate-800 dark:text-zinc-200 mb-2">
+                Parsed Products Preview ({importParsedList.length} items ready):
+              </p>
+              <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800 border border-slate-200 dark:border-zinc-800 rounded-xl">
+                {importParsedList.map((item, i) => (
+                  <div key={i} className="p-2.5 flex justify-between items-center bg-white dark:bg-zinc-900">
+                    <div>
+                      <p className="font-bold text-slate-900 dark:text-zinc-100">{item.name}</p>
+                      <p className="font-mono text-[10px] text-slate-400">{item.sku} • {item.categoryName}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900 dark:text-zinc-100">{formatCurrency(item.price)}</p>
+                      <p className="text-[10px] text-emerald-600">{item.quantityOnHand} units</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={executeBulkImport}
+            disabled={importParsedList.length === 0 || isImporting}
+            className="bg-emerald-600 text-white font-bold"
+          >
+            {isImporting ? "Importing..." : `Create ${importParsedList.length} Products`}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Barcode & Shelf Sticker Modal */}
+      <ProductBarcodeModal
+        product={barcodeProduct}
+        isOpen={!!barcodeProduct}
+        onClose={() => setBarcodeProduct(null)}
+      />
     </div>
   );
 }

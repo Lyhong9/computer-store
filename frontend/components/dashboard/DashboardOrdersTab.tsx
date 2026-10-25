@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ShoppingBag,
   Search,
@@ -8,12 +8,17 @@ import {
   CheckCircle2,
   Clock,
   Truck,
-  PackageCheck,
   Calendar,
   User,
   CreditCard,
   MapPin,
-  ExternalLink,
+  Printer,
+  Download,
+  DollarSign,
+  TrendingUp,
+  PackageCheck,
+  AlertCircle,
+  ChevronDown,
 } from "lucide-react";
 import { Order } from "@/types/store";
 import { formatCurrency, formatDate, normalizeImageUrl, handleImageError } from "@/lib/utils";
@@ -37,6 +42,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { OrderInvoiceModal } from "@/components/dashboard/OrderInvoiceModal";
+import { ordersApi } from "@/services/api";
 
 interface DashboardOrdersTabProps {
   orders: Order[];
@@ -50,18 +57,139 @@ export function DashboardOrdersTab({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
 
-  const filteredOrders = orders.filter((o) => {
-    const matchesSearch =
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      o.customerEmail.toLowerCase().includes(search.toLowerCase());
+  // Tracking dialog state
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [carrier, setCarrier] = useState("J&T Express");
+  const [trackingNumber, setTrackingNumber] = useState("");
 
-    const matchesStatus =
-      statusFilter === "ALL" || o.status === statusFilter;
+  const CARRIERS = [
+    "J&T Express",
+    "Virak Buntham (VET)",
+    "GrabExpress",
+    "Kerry Express Cambodia",
+    "Capitol Tour Express",
+    "DHL Express",
+  ];
 
-    return matchesSearch && matchesStatus;
-  });
+  // Filtered orders
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const matchesSearch =
+        o.id.toLowerCase().includes(search.toLowerCase()) ||
+        o.customerName.toLowerCase().includes(search.toLowerCase()) ||
+        o.customerEmail.toLowerCase().includes(search.toLowerCase()) ||
+        (o.customerPhone && o.customerPhone.includes(search));
+
+      const matchesStatus =
+        statusFilter === "ALL" || o.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, search, statusFilter]);
+
+  // Aggregate KPI Stats
+  const totalRevenue = useMemo(() => {
+    return orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  }, [orders]);
+
+  const pendingCount = useMemo(() => {
+    return orders.filter((o) => o.status === "CONFIRMED" || o.status === "PROCESSING").length;
+  }, [orders]);
+
+  const deliveredCount = useMemo(() => {
+    return orders.filter((o) => o.status === "DELIVERED").length;
+  }, [orders]);
+
+  const handleStatusChange = async (orderId: string, st: Order["status"]) => {
+    if (st === "SHIPPED") {
+      const target = orders.find((o) => o.id === orderId);
+      if (target) {
+        setTrackingOrder(target);
+        setTrackingNumber(target.trackingNumber || `TRK-${Date.now().toString().slice(-6)}`);
+        return;
+      }
+    }
+
+    onUpdateStatus(orderId, st);
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder({ ...selectedOrder, status: st });
+    }
+
+    try {
+      await ordersApi.updateStatus(orderId, st);
+    } catch {
+      // Handled in client context
+    }
+  };
+
+  const submitShippingTracking = async () => {
+    if (!trackingOrder) return;
+    const updatedOrder: Order = {
+      ...trackingOrder,
+      status: "SHIPPED",
+      carrier,
+      trackingNumber,
+    };
+    onUpdateStatus(trackingOrder.id, "SHIPPED");
+    if (selectedOrder?.id === trackingOrder.id) {
+      setSelectedOrder(updatedOrder);
+    }
+    try {
+      await ordersApi.updateStatus(trackingOrder.id, "SHIPPED");
+    } catch {
+      // Handled
+    }
+    setTrackingOrder(null);
+  };
+
+  const exportOrdersCsv = () => {
+    if (orders.length === 0) return;
+
+    const headers = [
+      "Order ID",
+      "Date",
+      "Customer Name",
+      "Customer Email",
+      "Customer Phone",
+      "Items Count",
+      "Subtotal",
+      "Tax",
+      "Grand Total",
+      "Status",
+      "Payment Method",
+      "Shipping Address",
+      "Carrier",
+      "Tracking Number",
+    ];
+
+    const rows = filteredOrders.map((o) => [
+      `"${o.id}"`,
+      `"${new Date(o.createdAt).toLocaleString()}"`,
+      `"${o.customerName.replace(/"/g, '""')}"`,
+      `"${o.customerEmail}"`,
+      `"${o.customerPhone || ""}"`,
+      o.items.reduce((acc, it) => acc + it.quantity, 0),
+      o.subtotal || 0,
+      o.tax || 0,
+      o.total || 0,
+      `"${o.status}"`,
+      `"${o.paymentMethod || "KHQR"}"`,
+      `"${(o.shippingAddress || "").replace(/"/g, '""')}"`,
+      `"${o.carrier || ""}"`,
+      `"${o.trackingNumber || ""}"`,
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `techshop_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const getStatusBadge = (status: Order["status"]) => {
     switch (status) {
@@ -100,7 +228,7 @@ export function DashboardOrdersTab({
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-300">
-      {/* Header */}
+      {/* Top Header with Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
@@ -112,9 +240,80 @@ export function DashboardOrdersTab({
             </Badge>
           </div>
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-            Track customer shipments, process payments, and update delivery statuses.
+            Track customer shipments, print tax invoices, and update delivery statuses.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={exportOrdersCsv}
+            variant="outline"
+            size="sm"
+            className="h-9 px-3.5 text-xs font-bold gap-1.5 text-slate-700 dark:text-zinc-300"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Total Order Volume
+            </span>
+            <div className="text-xl font-black text-slate-900 dark:text-zinc-50 mt-1">
+              {formatCurrency(totalRevenue)}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <DollarSign className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Orders Placed
+            </span>
+            <div className="text-xl font-black text-slate-900 dark:text-zinc-50 mt-1">
+              {orders.length}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Pending Fulfillment
+            </span>
+            <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
+              {pendingCount}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <Clock className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Successfully Delivered
+            </span>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+              {deliveredCount}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </Card>
       </div>
 
       {/* Filter and Search Bar */}
@@ -123,7 +322,7 @@ export function DashboardOrdersTab({
           <div className="flex-1 max-w-md">
             <Input
               type="text"
-              placeholder="Search by Order ID, customer name or email..."
+              placeholder="Search by Order ID, customer name or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               icon={<Search className="w-4 h-4 text-slate-400" />}
@@ -177,7 +376,7 @@ export function DashboardOrdersTab({
               No orders found
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-              No orders matched your current filters.
+              No orders matched your current search filters.
             </p>
           </div>
         ) : (
@@ -211,7 +410,7 @@ export function DashboardOrdersTab({
                         {order.customerName}
                       </span>
                       <span className="text-[11px] text-slate-400 dark:text-zinc-500">
-                        {order.customerEmail}
+                        {order.customerEmail || order.customerPhone}
                       </span>
                     </div>
                   </TableCell>
@@ -222,7 +421,18 @@ export function DashboardOrdersTab({
                     {formatCurrency(order.total)}
                   </TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
-                  <TableCell className="text-right space-x-2">
+                  <TableCell className="text-right space-x-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setInvoiceOrder(order)}
+                      title="Print Official Tax Invoice"
+                      className="h-8 text-xs font-semibold px-2.5 gap-1 text-slate-700 dark:text-zinc-300 hover:text-blue-600"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Invoice</span>
+                    </Button>
+
                     <Button
                       size="sm"
                       variant="secondary"
@@ -255,22 +465,19 @@ export function DashboardOrdersTab({
         {selectedOrder && (
           <div className="space-y-5 text-xs">
             {/* Status changer */}
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="font-semibold text-slate-700 dark:text-zinc-300">
-                Current Status:
+                Update Order Status:
               </span>
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {(["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"] as const).map(
                   (st) => (
                     <Button
                       key={st}
                       size="sm"
                       variant={selectedOrder.status === st ? "default" : "outline"}
-                      onClick={() => {
-                        onUpdateStatus(selectedOrder.id, st);
-                        setSelectedOrder({ ...selectedOrder, status: st });
-                      }}
-                      className="text-[10px] h-7 px-2.5 font-bold"
+                      onClick={() => handleStatusChange(selectedOrder.id, st)}
+                      className="text-[10px] h-7 px-2.5 font-bold cursor-pointer"
                     >
                       {st}
                     </Button>
@@ -278,6 +485,21 @@ export function DashboardOrdersTab({
                 )}
               </div>
             </div>
+
+            {/* Carrier & Tracking if shipped */}
+            {selectedOrder.trackingNumber && (
+              <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/40 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-bold text-purple-900 dark:text-purple-200">
+                    Carrier: {selectedOrder.carrier || "Courier Express"}
+                  </span>
+                </div>
+                <span className="font-mono font-bold text-xs text-purple-700 dark:text-purple-300 bg-white dark:bg-purple-900/50 px-2.5 py-1 rounded-md border border-purple-200">
+                  {selectedOrder.trackingNumber}
+                </span>
+              </div>
+            )}
 
             {/* Customer & Shipping Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -293,7 +515,7 @@ export function DashboardOrdersTab({
                   {selectedOrder.customerEmail}
                 </p>
                 <p className="text-slate-500 dark:text-zinc-400">
-                  {selectedOrder.customerPhone}
+                  {selectedOrder.customerPhone || "No phone provided"}
                 </p>
               </div>
 
@@ -303,10 +525,10 @@ export function DashboardOrdersTab({
                   Delivery Address
                 </span>
                 <p className="text-slate-600 dark:text-zinc-300 font-medium">
-                  {selectedOrder.shippingAddress}
+                  {selectedOrder.shippingAddress || "Store Pickup"}
                 </p>
                 <p className="text-slate-500 dark:text-zinc-400">
-                  Payment Method: {selectedOrder.paymentMethod}
+                  Payment Method: <span className="font-bold text-slate-800 dark:text-zinc-200">{selectedOrder.paymentMethod}</span>
                 </p>
               </div>
             </div>
@@ -316,7 +538,7 @@ export function DashboardOrdersTab({
               <h4 className="font-bold text-slate-900 dark:text-zinc-100 mb-2">
                 Order Items ({selectedOrder.items.length})
               </h4>
-              <div className="divide-y divide-slate-100 dark:divide-zinc-800 border border-slate-200/80 dark:border-zinc-800 rounded-xl overflow-hidden">
+              <div className="divide-y divide-slate-100 dark:divide-zinc-800 border border-slate-200/80 dark:border-zinc-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
                 {selectedOrder.items.map((it, idx) => (
                   <div
                     key={idx}
@@ -357,7 +579,7 @@ export function DashboardOrdersTab({
               </div>
               {selectedOrder.tax > 0 && (
                 <div className="flex justify-between text-slate-500 dark:text-zinc-400">
-                  <span>Estimated Tax:</span>
+                  <span>Estimated Tax (8%):</span>
                   <span>{formatCurrency(selectedOrder.tax)}</span>
                 </div>
               )}
@@ -371,12 +593,90 @@ export function DashboardOrdersTab({
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+        <DialogFooter className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (selectedOrder) setInvoiceOrder(selectedOrder);
+            }}
+            className="gap-1.5 text-xs font-bold"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print Invoice</span>
+          </Button>
+
+          <Button variant="default" onClick={() => setSelectedOrder(null)}>
             Close
           </Button>
         </DialogFooter>
       </Dialog>
+
+      {/* Shipping Tracking Prompt Dialog */}
+      <Dialog
+        open={!!trackingOrder}
+        onOpenChange={(open) => !open && setTrackingOrder(null)}
+      >
+        <DialogHeader onClose={() => setTrackingOrder(null)}>
+          <DialogTitle>Ship Order #{trackingOrder?.id}</DialogTitle>
+          <DialogDescription>
+            Provide shipping carrier and tracking information to dispatch this order.
+          </DialogDescription>
+        </DialogHeader>
+
+        {trackingOrder && (
+          <div className="space-y-4 text-xs py-2">
+            <div>
+              <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">
+                Shipping Carrier / Logistics Partner
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {CARRIERS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCarrier(c)}
+                    className={`py-2 px-3 rounded-xl border text-left font-semibold transition-all ${
+                      carrier === c
+                        ? "border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+                        : "border-slate-200 dark:border-zinc-800 hover:bg-slate-50 text-slate-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">
+                Waybill / Tracking Number
+              </label>
+              <Input
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="e.g. TRK-849201"
+                className="font-mono text-xs"
+              />
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setTrackingOrder(null)}>
+            Cancel
+          </Button>
+          <Button onClick={submitShippingTracking} className="bg-blue-600 text-white font-bold">
+            Confirm & Dispatch
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Printable Invoice Modal */}
+      <OrderInvoiceModal
+        order={invoiceOrder}
+        isOpen={!!invoiceOrder}
+        onClose={() => setInvoiceOrder(null)}
+      />
     </div>
   );
 }

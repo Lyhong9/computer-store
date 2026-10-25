@@ -260,11 +260,57 @@ export const ordersApi = {
     return res.data;
   },
 
-  getAll: async (page = 0, size = 20): Promise<{ content: Order[]; totalElements: number }> => {
-    const res = await apiClient.get<{ content: Order[]; totalElements: number }>("/api/orders", {
-      params: { page, size },
-    });
-    return res.data;
+  getAll: async (page = 0, size = 50): Promise<{ content: Order[]; totalElements: number }> => {
+    try {
+      const res = await apiClient.get<{ content: any[]; totalElements: number }>("/api/orders", {
+        params: { page, size },
+      });
+      const list = Array.isArray(res.data) ? res.data : (res.data?.content || []);
+      const mapped = list.map((o: any) => ({
+        id: o.orderNumber || o.id,
+        orderNumber: o.orderNumber || o.id,
+        createdAt: o.createdAt || new Date().toISOString(),
+        customerName: o.customerName || "Customer",
+        customerEmail: o.customerEmail || "",
+        customerPhone: o.customerPhone || "",
+        shippingAddress: o.shippingAddress || "",
+        paymentMethod: o.paymentMethod || "KHQR",
+        paymentStatus: o.paymentStatus || "PAID",
+        subtotal: Number(o.subtotal || 0),
+        tax: Number(o.tax || 0),
+        total: Number(o.total || 0),
+        status: o.status || "CONFIRMED",
+        items: Array.isArray(o.items)
+          ? o.items.map((it: any) => ({
+              product: {
+                id: it.productId || 0,
+                name: it.productName || "Hardware Component",
+                sku: it.sku || `SKU-${it.productId || 1}`,
+                price: Number(it.price || 0),
+                quantityOnHand: 20,
+                active: true,
+                categoryName: "Hardware",
+                brandName: "Brand",
+                description: "",
+              },
+              quantity: it.quantity || 1,
+            }))
+          : [],
+      }));
+      return { content: mapped, totalElements: res.data?.totalElements || mapped.length };
+    } catch {
+      return { content: [], totalElements: 0 };
+    }
+  },
+
+  updateStatus: async (orderNumber: string, status: string): Promise<void> => {
+    try {
+      await apiClient.patch(`/api/orders/${orderNumber}/status`, null, {
+        params: { status },
+      });
+    } catch (err) {
+      console.warn("Could not update order status on backend:", err);
+    }
   },
 };
 

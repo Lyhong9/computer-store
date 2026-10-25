@@ -18,6 +18,7 @@ import { DashboardFinancesTab } from "@/components/dashboard/DashboardFinancesTa
 import { DashboardSettingsTab } from "@/components/dashboard/DashboardSettingsTab";
 import { DashboardPosTab } from "@/components/dashboard/DashboardPosTab";
 import { DashboardCustomerAccount } from "@/components/dashboard/DashboardCustomerAccount";
+import { DashboardContentTab } from "@/components/dashboard/DashboardContentTab";
 
 export default function DashboardPage() {
   const { orders, updateOrderStatus } = useCart();
@@ -71,6 +72,7 @@ export default function DashboardPage() {
             onAddProduct={handleOpenAddProduct}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            onNavigate={(sec) => setActiveSection(sec)}
           />
         )}
 
@@ -128,16 +130,7 @@ export default function DashboardPage() {
                 <DashboardSettingsTab section={activeSection} />
               )}
 
-              {activeSection === "content" && (
-                <div className="p-8 text-center text-slate-500">
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-200">
-                    Content Management CMS
-                  </h2>
-                  <p className="text-xs mt-1">
-                    Manage promotional homepage banners, announcement tickers, and customer reviews.
-                  </p>
-                </div>
-              )}
+              {activeSection === "content" && <DashboardContentTab />}
             </>
           )}
         </main>
