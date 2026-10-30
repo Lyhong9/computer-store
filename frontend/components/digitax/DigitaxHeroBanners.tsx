@@ -99,11 +99,11 @@ export function DigitaxHeroBanners({ onShopClick }: DigitaxHeroBannersProps) {
                 <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
               </button>
             </div>
-            <div className="w-28 h-28 sm:w-32 sm:h-32 relative shrink-0">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border border-slate-200 dark:border-zinc-700/80 overflow-hidden relative shrink-0 bg-slate-50 dark:bg-zinc-800/40 shadow-2xs group-hover:border-blue-500/80 transition-all duration-300">
               <img
                 src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80"
                 alt="4K Xiaomi Camera"
-                className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-md"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
           </div>
@@ -126,11 +126,11 @@ export function DigitaxHeroBanners({ onShopClick }: DigitaxHeroBannersProps) {
                 <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
               </button>
             </div>
-            <div className="w-28 h-28 sm:w-32 sm:h-32 relative shrink-0">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border border-slate-200 dark:border-zinc-700/80 overflow-hidden relative shrink-0 bg-slate-50 dark:bg-zinc-800/40 shadow-2xs group-hover:border-blue-500/80 transition-all duration-300">
               <img
                 src="https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&q=80"
                 alt="Studio Spatial Audio"
-                className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-md"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
           </div>

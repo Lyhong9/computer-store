@@ -56,7 +56,7 @@ export function DigitaxDealsAndProducts({
   const razerMouse = products.find((p) => p.sku === "RAZER-BASILISK-V3") || products[11] || products[1];
   const canonPixma = products.find((p) => p.sku === "CANON-PIXMA-AIO") || products[6] || products[2];
 
-  // Bottom Products Grid
+  // Bottom Products Grid (8 items for a clean 4-column layout)
   const bottomProducts = [
     products.find((p) => p.sku === "IPHONE-16-PRO-512") || products[2],
     products.find((p) => p.sku === "SEC-CAM-NIGHTVISION") || products[13],
@@ -64,6 +64,8 @@ export function DigitaxDealsAndProducts({
     products.find((p) => p.sku === "WATCH-S9-PINK") || products[4],
     products.find((p) => p.sku === "HP-DESKJET-WIRELESS") || products[10],
     products.find((p) => p.sku === "GALAXY-A15-5G") || products[8],
+    products.find((p) => p.sku === "ASUS-CHROMEBOOK-14") || products[5],
+    products.find((p) => p.sku === "IPHONE-14-PRO-256") || products[1],
   ].filter(Boolean) as Product[];
 
   return (
@@ -227,7 +229,7 @@ export function DigitaxDealsAndProducts({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
           {bottomProducts.map((p, idx) => (
             <ProductCardCompact
               key={`deal-bottom-${p.id || 'p'}-${idx}-${p.sku || p.name || ''}`}
@@ -303,22 +305,22 @@ function ProductCardCompact({
         </button>
       </div>
 
-      {/* Product Image Stage */}
+      {/* Product Image Stage - Cropped with Framed Border */}
       <div
-        className="w-full h-40 sm:h-44 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/70 dark:bg-zinc-850/60 p-3 flex items-center justify-center relative overflow-hidden cursor-pointer group-hover:bg-slate-100/90 dark:group-hover:bg-zinc-800 transition-colors"
+        className="w-full h-52 sm:h-56 rounded-2xl border border-slate-200/90 dark:border-zinc-700/80 bg-slate-50 dark:bg-zinc-800/40 relative overflow-hidden cursor-pointer group-hover:border-blue-500/80 transition-all duration-300 shadow-2xs"
         onClick={() => onQuickView(product)}
       >
         <img
           src={normalizeImageUrl(product.primaryImage)}
           alt={product.name}
           onError={(e) => handleImageError(e)}
-          className="max-h-full max-w-full object-contain filter drop-shadow-sm group-hover:scale-110 transition-transform duration-500 ease-out"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Quick View Hover Button */}
-        <div className="absolute inset-x-0 bottom-2 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-          <span className="px-3 py-1 rounded-full bg-slate-900/85 backdrop-blur-md text-white text-[10px] font-bold shadow-md flex items-center gap-1 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-            <Eye className="w-3 h-3" />
+        <div className="absolute inset-x-0 bottom-2.5 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <span className="px-3.5 py-1.5 rounded-full bg-slate-900/85 backdrop-blur-md text-white text-[10px] font-bold shadow-md flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+            <Eye className="w-3.5 h-3.5" />
             <span>Quick View</span>
           </span>
         </div>

@@ -53,7 +53,7 @@ export function DigitaxShopView({
   const [maxPrice, setMaxPrice] = useState<number>(10000);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("default");
-  const [gridCols, setGridCols] = useState<3 | 4>(3);
+  const [gridCols, setGridCols] = useState<3 | 4>(4);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [wishlistOnly, setWishlistOnly] = useState<boolean>(false);
 
@@ -510,16 +510,16 @@ export function DigitaxShopView({
                   </button>
                 </div>
 
-                {/* Product Image */}
+                {/* Product Image - Cropped with Framed Border */}
                 <div
-                  className="w-full h-44 flex items-center justify-center p-3 cursor-pointer group-hover:scale-105 transition-transform"
+                  className="w-full h-52 sm:h-56 rounded-2xl border border-slate-200/90 dark:border-zinc-700/80 overflow-hidden bg-slate-50 dark:bg-zinc-800/40 cursor-pointer group-hover:border-blue-500/80 transition-all duration-300 relative shadow-2xs"
                   onClick={() => onQuickView(p)}
                 >
                   <img
                     src={normalizeImageUrl(p.primaryImage)}
                     alt={p.name}
                     onError={(e) => handleImageError(e)}
-                    className="max-h-full max-w-full object-contain drop-shadow-sm"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
 

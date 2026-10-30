@@ -276,8 +276,14 @@ export function DashboardProductsTab({
 
   const confirmDelete = async () => {
     if (deleteCandidate) {
-      await deleteProductMutation.mutateAsync(deleteCandidate.id);
-      setDeleteCandidate(null);
+      try {
+        await deleteProductMutation.mutateAsync(deleteCandidate.id);
+      } catch (err: any) {
+        console.error("Failed to delete product:", err);
+        alert(`Could not delete "${deleteCandidate.name}". ` + (err?.response?.data?.message || err?.message || ""));
+      } finally {
+        setDeleteCandidate(null);
+      }
     }
   };
 
@@ -719,12 +725,12 @@ export function DashboardProductsTab({
                     {/* Product Details (Image, Name, SKU, Featured Badge) */}
                     <TableCell className="py-3.5">
                       <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 p-1 shrink-0 flex items-center justify-center overflow-hidden group/img">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/90 dark:border-zinc-700/80 shrink-0 overflow-hidden flex items-center justify-center group/img shadow-2xs">
                           <img
                             src={normalizeImageUrl(imgList[0])}
                             alt={p.name}
                             onError={(e) => handleImageError(e)}
-                            className="w-full h-full object-contain group-hover/img:scale-110 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300"
                           />
                         </div>
                         <div className="min-w-0">

@@ -152,8 +152,9 @@ export const productsApi = {
   delete: async (id: number): Promise<void> => {
     try {
       await apiClient.delete(`/api/products/${id}`);
-    } catch {
-      // Handled in client state
+    } catch (err) {
+      console.error(`Failed to delete product ${id}:`, err);
+      throw err;
     }
   },
 };

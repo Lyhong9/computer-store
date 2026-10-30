@@ -439,35 +439,35 @@ export function DashboardPosTab() {
             </div>
           </div>
 
-          {/* Product Cards Grid: 3 Columns matching user image */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {/* Product Cards Grid: 4 Columns with Framed & Cropped Images */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredProducts.map((p) => {
               const inCartItem = cart.find((i) => i.product.id === p.id);
               return (
                 <div
                   key={p.id}
-                  className="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-3xl p-4 flex flex-col justify-between hover:shadow-lg transition-all duration-300 relative group"
+                  className="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-3xl p-3.5 flex flex-col justify-between hover:shadow-xl hover:border-blue-400/60 dark:hover:border-blue-500/40 hover:-translate-y-1 transition-all duration-300 relative group"
                 >
-                  {/* Stock Badge Top Left */}
-                  <div className="absolute top-3.5 left-3.5 z-10">
-                    <span className="px-2.5 py-1 rounded-full bg-slate-950/90 text-white text-[10px] font-bold shadow-xs">
-                      {p.quantityOnHand || 120} Stock
-                    </span>
-                  </div>
+                  {/* Product Image Stage - Cropped with Framed Border */}
+                  <div className="w-full h-44 rounded-2xl border border-slate-200/90 dark:border-zinc-700/80 bg-slate-50 dark:bg-zinc-850 overflow-hidden mb-3 relative group-hover:border-blue-500/80 transition-all duration-300 shadow-2xs">
+                    {/* Stock Badge Top Left */}
+                    <div className="absolute top-2.5 left-2.5 z-10">
+                      <span className="px-2.5 py-1 rounded-full bg-slate-950/85 backdrop-blur-md text-white text-[10px] font-bold shadow-xs">
+                        {p.quantityOnHand || 120} Stock
+                      </span>
+                    </div>
 
-                  {/* Product Image */}
-                  <div className="w-full h-40 bg-slate-50/50 dark:bg-zinc-950/50 rounded-2xl p-2 flex items-center justify-center overflow-hidden mb-3">
                     <img
                       src={normalizeImageUrl(p.primaryImage)}
                       alt={p.name}
                       onError={(e) => handleImageError(e)}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 drop-shadow-sm"
                     />
                   </div>
 
                   {/* Product Info */}
                   <div className="space-y-1">
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-1 group-hover:text-blue-600 transition-colors" title={p.name}>
                       {p.name}
                     </h3>
                     <p className="text-[11px] text-slate-400 dark:text-zinc-500 line-clamp-2 leading-relaxed min-h-[32px]">
@@ -489,7 +489,7 @@ export function DashboardPosTab() {
                   <button
                     type="button"
                     onClick={() => addToPosCart(p)}
-                    className="mt-3.5 w-full py-2.5 px-3 rounded-2xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:border-slate-400 dark:hover:border-zinc-500 hover:bg-slate-50 dark:hover:bg-zinc-750 text-xs font-bold text-slate-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                    className="mt-3.5 w-full py-2.5 px-3 rounded-2xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 text-xs font-bold text-slate-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add to Cart</span>
@@ -564,12 +564,12 @@ export function DashboardPosTab() {
                 >
                   {/* Thumbnail & Info */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-900 p-1 shrink-0 border border-slate-200/60 dark:border-zinc-800 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-900 shrink-0 border border-slate-200/90 dark:border-zinc-700/80 overflow-hidden flex items-center justify-center shadow-2xs">
                       <img
                         src={normalizeImageUrl(item.product.primaryImage)}
                         alt={item.product.name}
                         onError={(e) => handleImageError(e)}
-                        className="max-h-full max-w-full object-contain"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="min-w-0">

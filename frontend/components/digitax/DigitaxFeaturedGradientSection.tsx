@@ -77,7 +77,7 @@ export function DigitaxFeaturedGradientSection({
               {iphone15 && (
                 <div className="flex flex-col items-center sm:items-start text-center sm:text-left border-b sm:border-b-0 sm:border-r border-slate-800/80 sm:pr-6 pb-6 sm:pb-0">
                   <div
-                    className="w-full h-52 sm:h-56 relative mb-4 rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-950/60 border border-slate-800 flex items-center justify-center p-4 cursor-pointer group/img overflow-hidden"
+                    className="w-full h-56 sm:h-64 relative mb-4 rounded-2xl border border-slate-700/90 dark:border-zinc-700/90 bg-slate-950 overflow-hidden cursor-pointer group/img group-hover/img:border-blue-500/80 transition-all duration-300 shadow-md"
                     onClick={() => onQuickView(iphone15)}
                   >
                     <div className="absolute top-2.5 left-2.5 z-10">
@@ -89,7 +89,7 @@ export function DigitaxFeaturedGradientSection({
                       src={normalizeImageUrl(iphone15.primaryImage)}
                       alt={iphone15.name}
                       onError={(e) => handleImageError(e)}
-                      className="w-full h-full object-contain group-hover/img:scale-105 transition-transform duration-500 drop-shadow-xl"
+                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                     />
                   </div>
                   <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block mb-1">
@@ -151,14 +151,14 @@ export function DigitaxFeaturedGradientSection({
                     className="flex items-center gap-3.5 p-2.5 rounded-2xl hover:bg-slate-800/70 border border-transparent hover:border-slate-800 transition-all group"
                   >
                     <div
-                      className="w-16 h-16 rounded-xl bg-slate-950/70 border border-slate-800/90 p-1.5 shrink-0 cursor-pointer flex items-center justify-center"
+                      className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-700/90 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center shadow-xs group-hover:border-blue-400 transition-all duration-300"
                       onClick={() => onQuickView(p)}
                     >
                       <img
                         src={normalizeImageUrl(p.primaryImage)}
                         alt={p.name}
                         onError={(e) => handleImageError(e)}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -230,7 +230,7 @@ export function DigitaxFeaturedGradientSection({
               {hpLaptop && (
                 <div className="flex flex-col items-center sm:items-start text-center sm:text-left border-b sm:border-b-0 sm:border-r border-slate-800/80 sm:pr-6 pb-6 sm:pb-0">
                   <div
-                    className="w-full h-52 sm:h-56 relative mb-4 rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-950/60 border border-slate-800 flex items-center justify-center p-4 cursor-pointer group/img overflow-hidden"
+                    className="w-full h-56 sm:h-64 relative mb-4 rounded-2xl border border-slate-700/90 dark:border-zinc-700/90 bg-slate-950 overflow-hidden cursor-pointer group/img group-hover/img:border-blue-500/80 transition-all duration-300 shadow-md"
                     onClick={() => onQuickView(hpLaptop)}
                   >
                     <div className="absolute top-2.5 left-2.5 z-10">
@@ -242,7 +242,7 @@ export function DigitaxFeaturedGradientSection({
                       src={normalizeImageUrl(hpLaptop.primaryImage)}
                       alt={hpLaptop.name}
                       onError={(e) => handleImageError(e)}
-                      className="w-full h-full object-contain group-hover/img:scale-105 transition-transform duration-500 drop-shadow-xl"
+                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                     />
                   </div>
                   <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block mb-1">
@@ -304,14 +304,14 @@ export function DigitaxFeaturedGradientSection({
                     className="flex items-center gap-3.5 p-2.5 rounded-2xl hover:bg-slate-800/70 border border-transparent hover:border-slate-800 transition-all group"
                   >
                     <div
-                      className="w-16 h-16 rounded-xl bg-slate-950/70 border border-slate-800/90 p-1.5 shrink-0 cursor-pointer flex items-center justify-center"
+                      className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-700/90 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center shadow-xs group-hover:border-blue-400 transition-all duration-300"
                       onClick={() => onQuickView(p)}
                     >
                       <img
                         src={normalizeImageUrl(p.primaryImage)}
                         alt={p.name}
                         onError={(e) => handleImageError(e)}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                     <div className="flex-1 min-w-0">

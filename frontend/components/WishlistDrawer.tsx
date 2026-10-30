@@ -60,28 +60,26 @@ export function WishlistDrawer({
     <div className="fixed inset-0 z-50 overflow-hidden font-sans antialiased animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
         onClick={() => setIsWishlistOpen(false)}
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-slate-900/95 backdrop-blur-xl border-l border-white/10 text-white shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300">
+        <div className="w-screen max-w-md bg-white border-l border-slate-200/90 text-slate-900 shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300">
           {/* Header */}
-          <div className="p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white/90 backdrop-blur-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 p-0.5 flex items-center justify-center shadow-lg shadow-rose-500/30">
-                <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
-                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-                </div>
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center shadow-xs">
+                <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
               </div>
               <div>
-                <h3 className="font-extrabold text-base tracking-tight flex items-center gap-2">
+                <h3 className="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-2">
                   <span>My Wishlist</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 font-bold">
                     {totalWishlistItems}
                   </span>
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500 font-medium">
                   Products you have saved for later
                 </p>
               </div>
@@ -92,7 +90,7 @@ export function WishlistDrawer({
                 <button
                   type="button"
                   onClick={clearWishlist}
-                  className="text-[11px] font-semibold text-slate-400 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                  className="text-[11px] font-semibold text-slate-400 hover:text-rose-600 transition-colors px-2 py-1 rounded-lg hover:bg-rose-50"
                   title="Clear Wishlist"
                 >
                   Clear All
@@ -101,7 +99,7 @@ export function WishlistDrawer({
               <button
                 type="button"
                 onClick={() => setIsWishlistOpen(false)}
-                className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all"
                 title="Close Wishlist"
               >
                 <X className="w-4 h-4" />
@@ -110,15 +108,15 @@ export function WishlistDrawer({
           </div>
 
           {/* Body Content */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-3.5 scrollbar-thin scrollbar-thumb-white/10">
+          <div className="flex-1 overflow-y-auto p-5 space-y-3.5 scrollbar-thin scrollbar-thumb-slate-200">
             {wishlist.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
-                <div className="w-20 h-20 rounded-3xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-inner">
+                <div className="w-20 h-20 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 shadow-inner">
                   <Heart className="w-10 h-10 stroke-[1.5]" />
                 </div>
                 <div className="space-y-1.5 max-w-xs">
-                  <h4 className="text-base font-bold text-white">Your wishlist is empty</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <h4 className="text-base font-bold text-slate-900">Your wishlist is empty</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
                     Explore our high-performance hardware, laptops, and accessories and click the heart icon to save your favorites!
                   </p>
                 </div>
@@ -128,7 +126,7 @@ export function WishlistDrawer({
                     setIsWishlistOpen(false);
                     onExploreShop?.();
                   }}
-                  className="mt-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-lg shadow-rose-600/30 flex items-center gap-2 transition-all cursor-pointer"
+                  className="mt-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/25 flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Discover Products</span>
@@ -140,35 +138,35 @@ export function WishlistDrawer({
                 return (
                   <div
                     key={`wishlist-item-${product.id}`}
-                    className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.07] hover:border-white/[0.14] transition-all duration-200 flex gap-3.5 items-center group relative shadow-md shadow-black/20"
+                    className="p-3.5 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all duration-200 flex gap-3.5 items-center group relative shadow-2xs"
                   >
                     {/* Thumbnail */}
                     <div
                       onClick={() => {
                         onQuickView?.(product);
                       }}
-                      className="w-16 h-16 rounded-xl bg-white/[0.08] p-1.5 flex items-center justify-center shrink-0 border border-white/10 shadow-xs overflow-hidden group-hover:border-rose-500/40 transition-colors cursor-pointer"
+                      className="w-16 h-16 rounded-xl bg-white shrink-0 border border-slate-200 shadow-xs overflow-hidden group-hover:border-rose-400 transition-colors cursor-pointer flex items-center justify-center"
                     >
                       <img
                         src={normalizeImageUrl(product.primaryImage || (product.images && product.images[0]))}
                         alt={product.name}
                         onError={(e) => handleImageError(e)}
-                        className="max-h-full max-w-full object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-200"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-rose-400 uppercase tracking-wider">
+                        <span className="text-[10px] font-semibold text-rose-600 uppercase tracking-wider">
                           {product.categoryName || "Hardware"}
                         </span>
                         {product.quantityOnHand > 0 ? (
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                             In Stock
                           </span>
                         ) : (
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200">
                             Out of Stock
                           </span>
                         )}
@@ -176,18 +174,18 @@ export function WishlistDrawer({
 
                       <h4
                         onClick={() => onQuickView?.(product)}
-                        className="text-xs font-bold text-white hover:text-rose-400 transition-colors truncate cursor-pointer"
+                        className="text-xs font-bold text-slate-900 hover:text-blue-600 transition-colors truncate cursor-pointer"
                         title={product.name}
                       >
                         {product.name}
                       </h4>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-rose-400">
+                        <span className="text-xs font-black text-rose-600">
                           {formatCurrency(product.price)}
                         </span>
                         {product.originalPrice && (
-                          <span className="text-[10px] text-slate-500 line-through">
+                          <span className="text-[10px] text-slate-400 line-through">
                             {formatCurrency(product.originalPrice)}
                           </span>
                         )}
@@ -199,7 +197,7 @@ export function WishlistDrawer({
                       <button
                         type="button"
                         onClick={() => removeFromWishlist(product.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
                         title="Remove from wishlist"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -211,7 +209,7 @@ export function WishlistDrawer({
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
                           isAdded
                             ? "bg-emerald-600 text-white"
-                            : "bg-[#1b74e4] hover:bg-[#155ec2] text-white hover:scale-105 active:scale-95"
+                            : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 active:scale-95"
                         }`}
                         title="Add to Shopping Cart"
                       >
@@ -236,11 +234,11 @@ export function WishlistDrawer({
 
           {/* Footer */}
           {wishlist.length > 0 && (
-            <div className="p-5 border-t border-white/10 bg-white/[0.02] space-y-2.5">
+            <div className="p-5 border-t border-slate-200 bg-white/95 backdrop-blur-xl space-y-2.5">
               <button
                 type="button"
                 onClick={handleAddAllToCart}
-                className="w-full py-3 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                className="w-full py-3 rounded-2xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span>Add All ({wishlist.length}) to Cart</span>
@@ -252,7 +250,7 @@ export function WishlistDrawer({
                   setIsWishlistOpen(false);
                   onExploreShop?.();
                 }}
-                className="w-full py-2.5 rounded-2xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 transition-all text-center flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-2xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all text-center flex items-center justify-center gap-1.5"
               >
                 <span>Continue Shopping</span>
                 <ArrowRight className="w-3.5 h-3.5" />

@@ -27,6 +27,7 @@ public class CustomerOrderItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.SET_NULL)
     private Product product;
 
     @Column(name = "product_name", nullable = false, length = 255)

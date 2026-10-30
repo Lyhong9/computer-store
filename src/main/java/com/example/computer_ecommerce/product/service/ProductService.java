@@ -28,6 +28,9 @@ public class ProductService {
     private final BrandRepository brands;
     private final ProductMapper mapper;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public ProductService(
             ProductRepository products,
             CategoryRepository categories,
@@ -134,7 +137,16 @@ public class ProductService {
     }
 
     public void delete(Long id) {
-        products.delete(getProduct(id));
+        Product product = getProduct(id);
+        if (entityManager != null) {
+            entityManager.createNativeQuery("UPDATE customer_order_items SET product_id = NULL WHERE product_id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM sale_items WHERE product_id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
+        }
+        products.delete(product);
     }
 
     private Product getProduct(Long id) {
