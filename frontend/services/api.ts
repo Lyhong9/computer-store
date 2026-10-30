@@ -303,6 +303,48 @@ export const ordersApi = {
     }
   },
 
+  getByEmail: async (email: string): Promise<Order[]> => {
+    try {
+      const res = await apiClient.get<any[]>("/api/orders/by-email", {
+        params: { email },
+      });
+      const list = Array.isArray(res.data) ? res.data : [];
+      return list.map((o: any) => ({
+        id: o.orderNumber || o.id,
+        orderNumber: o.orderNumber || o.id,
+        createdAt: o.createdAt || new Date().toISOString(),
+        customerName: o.customerName || "Customer",
+        customerEmail: o.customerEmail || email,
+        customerPhone: o.customerPhone || "",
+        shippingAddress: o.shippingAddress || "",
+        paymentMethod: o.paymentMethod || "KHQR",
+        paymentStatus: o.paymentStatus || "PAID",
+        subtotal: Number(o.subtotal || 0),
+        tax: Number(o.tax || 0),
+        total: Number(o.total || 0),
+        status: o.status || "CONFIRMED",
+        items: Array.isArray(o.items)
+          ? o.items.map((it: any) => ({
+              product: {
+                id: it.productId || 0,
+                name: it.productName || "Hardware Component",
+                sku: it.sku || `SKU-${it.productId || 1}`,
+                price: Number(it.price || 0),
+                quantityOnHand: 20,
+                active: true,
+                categoryName: "Hardware",
+                brandName: "Brand",
+                description: "",
+              },
+              quantity: it.quantity || 1,
+            }))
+          : [],
+      }));
+    } catch {
+      return [];
+    }
+  },
+
   updateStatus: async (orderNumber: string, status: string): Promise<void> => {
     try {
       await apiClient.patch(`/api/orders/${orderNumber}/status`, null, {
@@ -495,6 +537,14 @@ export const customerApi = {
       return res.data;
     } catch {
       return [];
+    }
+  },
+  getById: async (id: number): Promise<CustomerProfile | null> => {
+    try {
+      const res = await apiClient.get<CustomerProfile>(`/api/customers/${id}`);
+      return res.data;
+    } catch {
+      return null;
     }
   },
 };

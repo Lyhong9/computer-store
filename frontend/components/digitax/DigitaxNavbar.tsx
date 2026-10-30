@@ -23,6 +23,7 @@ import {
   Camera,
   Check,
   LayoutGrid,
+  Sparkles,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -125,13 +126,10 @@ export function DigitaxNavbar({
   };
 
   return (
-    <header
-      className="w-full text-white select-none z-40 sticky top-0 shadow-xl transition-all duration-300"
-      style={{
-        background:
-          "linear-gradient(90deg, #00767c 0%, #006b77 15%, #074773 35%, #0e2f82 60%, #1e1975 80%, #351165 100%)",
-      }}
-    >
+    <header className="w-full text-white select-none z-40 sticky top-0 shadow-2xl backdrop-blur-xl bg-[#090d1a]/95 border-b border-slate-800/80 transition-all duration-300">
+      {/* Top micro glowing accent gradient */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-blue-600 via-cyan-400 to-indigo-600 shadow-[0_0_12px_rgba(34,211,238,0.4)]" />
+
       {/* 1. TOP BAR */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
         <div className="flex items-center justify-between gap-3 md:gap-6">
@@ -139,57 +137,55 @@ export function DigitaxNavbar({
           <Link
             href="/"
             onClick={() => setActiveTab("home")}
-            className="flex items-center gap-1.5 group cursor-pointer shrink-0"
+            className="flex items-center gap-3 group cursor-pointer shrink-0"
           >
-            {/* Stylized Neon Green Digital 'D' */}
-            <div className="relative w-8 h-8 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-              <svg
-                viewBox="0 0 36 36"
-                className="w-8 h-8 drop-shadow-[0_0_12px_rgba(0,230,118,0.5)]"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M4 6C4 4.34315 5.34315 3 7 3H19C27.2843 3 34 9.71573 34 18C34 26.2843 27.2843 33 19 33H7C5.34315 33 4 31.6569 4 30V6ZM11 10.5C11 9.67157 11.6716 9 12.5 9H18C22.9706 9 27 13.0294 27 18C27 22.9706 22.9706 27 18 27H12.5C11.6716 27 11 26.3284 11 25.5V20.5H19C20.3807 20.5 21.5 19.3807 21.5 18C21.5 16.6193 20.3807 15.5 19 15.5H11V10.5Z"
-                  fill="#00e676"
-                />
-              </svg>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 p-0.5 shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
+              <div className="w-full h-full rounded-2xl bg-[#090d1a] flex items-center justify-center">
+                <Cpu className="w-5 h-5 text-cyan-400 group-hover:rotate-12 transition-transform duration-300" />
+              </div>
             </div>
-            {/* Bold White Text 'IGITAX' */}
-            <span className="text-2xl sm:text-[27px] font-black tracking-wider text-white font-sans drop-shadow-sm">
-              IGITAX
-            </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-white font-sans">
+                  DIGITAX
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.2 rounded-md">
+                  PRO
+                </span>
+              </div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest -mt-0.5">
+                Computer &amp; Gaming Store
+              </span>
+            </div>
           </Link>
 
-          {/* Search Bar - Modern White Pill Container */}
+          {/* Search Bar - Modern Frosted Tech Container */}
           <form
             onSubmit={handleSearchSubmit}
-            className="flex-1 max-w-2xl hidden md:flex items-center bg-white rounded-full p-1 pl-1.5 pr-2.5 shadow-md border border-white/20 focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:shadow-lg transition-all"
+            className="flex-1 max-w-2xl hidden md:flex items-center bg-slate-900/90 rounded-2xl p-1 pl-1.5 pr-2.5 shadow-inner border border-slate-750 focus-within:ring-2 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 transition-all"
           >
             {/* Modern Category Dropdown */}
             <div className="relative shrink-0" ref={searchCategoryRef}>
               <button
                 type="button"
                 onClick={() => setSearchCategoryOpen(!searchCategoryOpen)}
-                className="flex items-center gap-2 pl-3.5 pr-3 py-1.5 rounded-full hover:bg-slate-100/90 active:bg-slate-200/80 transition-all text-xs font-semibold text-slate-700 hover:text-slate-900 select-none border-r border-slate-200/80 group cursor-pointer"
+                className="flex items-center gap-2 pl-3.5 pr-3 py-1.5 rounded-xl hover:bg-slate-800 active:bg-slate-750 transition-all text-xs font-semibold text-slate-300 hover:text-white select-none border-r border-slate-700/80 group cursor-pointer"
                 aria-haspopup="listbox"
                 aria-expanded={searchCategoryOpen}
               >
                 <span className="shrink-0 group-hover:scale-110 transition-transform">
                   {selectedCategory === "all" ? (
-                    <LayoutGrid className="w-3.5 h-3.5 text-blue-500" />
+                    <LayoutGrid className="w-3.5 h-3.5 text-cyan-400" />
                   ) : (
                     getCategoryIcon(selectedCategory)
                   )}
                 </span>
-                <span className="max-w-[120px] truncate text-slate-700 font-bold group-hover:text-blue-600 transition-colors">
+                <span className="max-w-[120px] truncate font-bold group-hover:text-cyan-300 transition-colors">
                   {selectedCategory === "all" ? "All Categories" : selectedCategory}
                 </span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                    searchCategoryOpen ? "rotate-180 text-blue-600" : "group-hover:text-slate-600"
+                    searchCategoryOpen ? "rotate-180 text-cyan-400" : "group-hover:text-slate-300"
                   }`}
                 />
               </button>
@@ -281,7 +277,7 @@ export function DigitaxNavbar({
               <Search className="w-4 h-4 text-slate-400 shrink-0 ml-3 mr-1 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search products, brands, models..."
+                placeholder="Search laptops, graphics cards, CPUs, monitors..."
                 value={searchQuery}
                 onChange={(e) => {
                   onSearchChange(e.target.value);
@@ -289,13 +285,13 @@ export function DigitaxNavbar({
                     setActiveTab("shop");
                   }
                 }}
-                className="w-full px-2 py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 outline-none bg-transparent font-medium"
+                className="w-full px-2 py-2 text-xs sm:text-sm text-white placeholder:text-slate-400 outline-none bg-transparent font-medium"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => onSearchChange("")}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0 mr-1 cursor-pointer"
+                  className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0 mr-1 cursor-pointer"
                   title="Clear search"
                   aria-label="Clear search"
                 >
@@ -306,22 +302,22 @@ export function DigitaxNavbar({
           </form>
 
           {/* Right Header Section: Support & Icons */}
-          <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-            {/* Headset & Contact Details */}
-            <div className="hidden lg:flex items-center gap-2.5">
-              <Headset className="w-6 h-6 text-white stroke-[1.8]" />
+          <div className="flex items-center gap-3 sm:gap-5 shrink-0">
+            {/* Direct Support Details */}
+            <div className="hidden lg:flex items-center gap-2.5 bg-slate-900/60 border border-slate-800/80 px-3.5 py-1.5 rounded-2xl">
+              <Headset className="w-5 h-5 text-cyan-400 stroke-[2]" />
               <div className="text-left leading-tight">
-                <p className="text-[11px] text-white/80 font-normal">
-                  digitax@example.com
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  Bakong &amp; Phone POS
                 </p>
-                <p className="font-extrabold text-xs sm:text-sm text-white tracking-wide">
-                  +1 202 888 6789
+                <p className="font-extrabold text-xs text-white tracking-wide font-mono">
+                  +855 96 899 9414
                 </p>
               </div>
             </div>
 
             {/* Icons Group: User, Wishlist, Cart */}
-            <div className="flex items-center gap-3 sm:gap-4 text-white">
+            <div className="flex items-center gap-2.5 sm:gap-3 text-white">
               {/* Account Profile */}
               <Show when="signed-in">
                 <div className="flex items-center">
@@ -331,10 +327,10 @@ export function DigitaxNavbar({
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
-                  className="hover:text-[#00e676] transition-colors p-1"
+                  className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition-colors"
                   title="Sign In"
                 >
-                  <UserIcon className="w-5 h-5 text-white stroke-[1.8]" />
+                  <UserIcon className="w-4 h-4" />
                 </Link>
               </Show>
 
@@ -343,35 +339,45 @@ export function DigitaxNavbar({
                 type="button"
                 id="header-wishlist-btn"
                 onClick={() => setIsWishlistOpen(true)}
-                className="hover:text-[#ff2a5f] transition-colors p-1 relative flex items-center group cursor-pointer"
+                className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-rose-400 border border-slate-800 transition-colors relative flex items-center group cursor-pointer"
                 title={`Wishlist (${totalWishlistItems})`}
               >
                 <Heart
-                  className={`w-5 h-5 text-white stroke-[1.8] group-hover:scale-110 transition-transform ${
-                    totalWishlistItems > 0 ? "text-rose-400 fill-rose-500/40" : ""
+                  className={`w-4 h-4 transition-transform ${
+                    totalWishlistItems > 0 ? "text-rose-400 fill-rose-500" : ""
                   }`}
                 />
                 {totalWishlistItems > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-rose-500/30 animate-in zoom-in-50">
+                  <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-rose-500/40">
                     {totalWishlistItems}
                   </span>
                 )}
               </button>
 
-              {/* Shopping Cart Icon with Red Counter Badge */}
+              {/* Shopping Cart Icon with Badge */}
               <button
                 type="button"
                 id="header-cart-btn"
                 onClick={() => setIsCartOpen(true)}
-                className="hover:text-[#00e676] transition-colors p-1 relative flex items-center"
+                className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-cyan-400 border border-slate-800 transition-colors relative flex items-center group cursor-pointer"
                 title="Shopping Cart"
               >
-
-                <ShoppingCart className="w-5 h-5 text-white stroke-[1.8]" />
-                <span className="absolute -top-1.5 -right-2 bg-[#ff2a5f] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
-                  {totalItems}
-                </span>
+                <ShoppingCart className="w-4 h-4" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-blue-500/40">
+                    {totalItems}
+                  </span>
+                )}
               </button>
+
+              {/* Dashboard Link with glowing badge */}
+              <Link
+                href="/dashboard"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black tracking-wider text-cyan-300 bg-gradient-to-r from-cyan-500/15 to-blue-500/15 border border-cyan-400/40 hover:bg-cyan-500/25 hover:border-cyan-300 transition-all shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span>DASHBOARD</span>
+              </Link>
 
               {/* Mobile Hamburger Menu Toggle */}
               <button
@@ -482,17 +488,17 @@ export function DigitaxNavbar({
 
             {/* Center Menu Links (Desktop) */}
             <nav className="hidden md:flex items-center gap-1 text-xs font-bold tracking-wider uppercase h-full">
-              {/* HOME - Solid Bright Blue Background */}
+              {/* HOME Tab */}
               <button
                 type="button"
                 onClick={() => {
                   setActiveTab("home");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className={`px-5 py-2 rounded-xs transition-all font-extrabold ${
+                className={`px-4 py-1.5 rounded-xl transition-all font-black text-xs tracking-wider ${
                   activeTab === "home"
-                    ? "bg-[#1877f2] text-white shadow-sm"
-                    : "text-white/80 hover:text-white hover:bg-white/5"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
+                    : "text-slate-300 hover:text-white hover:bg-white/10"
                 }`}
               >
                 HOME
@@ -647,14 +653,6 @@ export function DigitaxNavbar({
               >
                 CONTACT US
               </button>
-
-              {/* Dashboard Link for quick Admin Management */}
-              <Link
-                href="/dashboard"
-                className="px-2.5 py-1 rounded text-[11px] font-bold text-[#00e676] hover:bg-white/10 border border-[#00e676]/40 transition-colors ml-1"
-              >
-                DASHBOARD
-              </Link>
             </nav>
 
             {/* Right: Currency & Language Selectors */}

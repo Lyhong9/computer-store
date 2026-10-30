@@ -41,12 +41,10 @@ export default function DashboardPage() {
 
   // Sync default view when switching between Admin and Customer roles
   useEffect(() => {
-    if (isCustomer && (activeSection === "pos" || activeSection === "products" || activeSection === "categories" || activeSection === "brands" || activeSection === "customers")) {
+    if (isCustomer && activeSection !== "account") {
       setActiveSection("account");
-    } else if (isAdmin && activeSection === "account") {
-      setActiveSection("dashboard");
     }
-  }, [isCustomer, isAdmin, activeSection]);
+  }, [isCustomer, activeSection]);
 
   const handleOpenAddProduct = () => {
     setActiveSection("products");

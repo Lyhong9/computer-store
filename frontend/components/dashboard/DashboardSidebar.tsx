@@ -72,8 +72,9 @@ export function DashboardSidebar({
   const [financesOpen, setFinancesOpen] = React.useState(true);
 
   const customerNav = [
-    { id: "account", label: "My Profile & Orders", icon: User },
-    { id: "store", label: "Storefront Catalog", icon: Store, isExternal: true, href: "/" },
+    { id: "account", label: "Profile Dashboard", icon: User },
+    { id: "orders", label: "My Store Orders", icon: ShoppingBag, isExternal: true, href: "/orders" },
+    { id: "store", label: "Storefront Catalog", icon: Store, isExternal: true, href: "/shop" },
   ];
 
   const mainNav = [
@@ -128,10 +129,10 @@ export function DashboardSidebar({
                 </span>
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${
                   isCustomer
-                    ? "text-teal-600 dark:text-teal-400"
+                    ? "text-blue-600 dark:text-blue-400"
                     : "text-purple-600 dark:text-purple-400"
                 }`}>
-                  {isCustomer ? "Customer Portal" : "Admin Portal"}
+                  {isCustomer ? "Customer Profile" : "Admin Portal"}
                 </span>
               </div>
             )}

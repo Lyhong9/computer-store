@@ -10,7 +10,6 @@ import {
   Cpu,
   Smartphone,
   Watch,
-  Tablet,
 } from "lucide-react";
 
 interface CategoryIconsBarProps {
@@ -23,20 +22,20 @@ export function DigitaxCategoryIconsBar({
   onSelectCategory,
 }: CategoryIconsBarProps) {
   const items = [
-    { name: "Audio", icon: Headphones },
-    { name: "Camera", icon: Camera },
-    { name: "Computer", icon: Monitor },
-    { name: "Game Console", icon: Gamepad2 },
-    { name: "Laptop", icon: Laptop },
-    { name: "Memory", icon: Cpu },
-    { name: "Mobile", icon: Smartphone },
-    { name: "Smartwatch", icon: Watch },
+    { name: "Audio", icon: Headphones, label: "Audio" },
+    { name: "Camera", icon: Camera, label: "Camera" },
+    { name: "Computer", icon: Monitor, label: "Computer" },
+    { name: "Game Console", icon: Gamepad2, label: "Gaming" },
+    { name: "Laptop", icon: Laptop, label: "Laptop" },
+    { name: "Memory", icon: Cpu, label: "Memory & CPU" },
+    { name: "Mobile", icon: Smartphone, label: "Smartphones" },
+    { name: "Smartwatch", icon: Watch, label: "Wearables" },
   ];
 
   return (
-    <div className="w-full bg-white border-b border-slate-100 py-4 shadow-xs">
+    <div className="w-full bg-slate-50/70 border-b border-slate-200/70 py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4">
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5 sm:gap-3.5">
           {items.map((item) => {
             const Icon = item.icon;
             const isSelected =
@@ -46,29 +45,27 @@ export function DigitaxCategoryIconsBar({
               <button
                 key={item.name}
                 onClick={() => onSelectCategory(item.name)}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all duration-200 group ${
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-200 group cursor-pointer ${
                   isSelected
-                    ? "bg-blue-50 border-2 border-blue-600 shadow-sm"
-                    : "hover:bg-slate-50 border border-transparent"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25 border border-blue-600 -translate-y-0.5"
+                    : "bg-white text-slate-700 border border-slate-200/80 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
                 }`}
               >
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-1.5 transition-transform duration-300 group-hover:scale-110 ${
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center mb-1.5 transition-transform duration-300 group-hover:scale-110 ${
                     isSelected
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                      : "bg-slate-100 text-slate-700 group-hover:bg-slate-200"
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100/80 text-slate-700 group-hover:bg-blue-50 group-hover:text-blue-600"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
                 </div>
                 <span
-                  className={`text-[11px] sm:text-xs font-bold tracking-tight text-center ${
-                    isSelected
-                      ? "text-blue-600"
-                      : "text-slate-700 group-hover:text-blue-600"
+                  className={`text-[11px] font-bold tracking-tight text-center truncate w-full ${
+                    isSelected ? "text-white" : "text-slate-800 group-hover:text-blue-600"
                   }`}
                 >
-                  {item.name}
+                  {item.label}
                 </span>
               </button>
             );
@@ -78,3 +75,4 @@ export function DigitaxCategoryIconsBar({
     </div>
   );
 }
+

@@ -14,6 +14,7 @@ import {
   Sparkles,
   ArrowRightLeft,
   ChevronDown,
+  Eye,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,8 +28,9 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { usersApi, UserAccount } from "@/services/api";
+import { usersApi, customerApi, UserAccount } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { DashboardCustomerAccount } from "@/components/dashboard/DashboardCustomerAccount";
 
 const SAMPLE_FALLBACK_USERS: UserAccount[] = [
   {
@@ -85,13 +87,32 @@ export function DashboardCustomersTab() {
     message: string;
   } | null>(null);
 
-  // Load live users from Spring Boot backend
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+
+  // Load live users from Spring Boot backend enriched with customer address & phone
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const data = await usersApi.getAll();
+      const [data, customersData] = await Promise.all([
+        usersApi.getAll().catch(() => []),
+        customerApi.getAll().catch(() => []),
+      ]);
       if (Array.isArray(data) && data.length > 0) {
-        setUsers(data);
+        const enriched = data.map((u) => {
+          const matchCust = (customersData || []).find(
+            (c) =>
+              c.userId === u.id ||
+              (c.email && u.email && c.email.toLowerCase() === u.email.toLowerCase())
+          );
+          return {
+            ...u,
+            phone: matchCust?.phone || (u as any).phone || null,
+            address: matchCust?.address || (u as any).address || null,
+            city: matchCust?.city || (u as any).city || null,
+            customerId: matchCust?.id || (u as any).customerId || null,
+          };
+        });
+        setUsers(enriched);
       }
     } catch (err) {
       console.warn("Could not load users from backend, using fallback:", err);
@@ -424,9 +445,21 @@ export function DashboardCustomersTab() {
                       </span>
                     </TableCell>
 
-                    {/* Interactive Role Switch Action */}
+                    {/* Action Buttons: View Profile & Role Toggle */}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Profile Dashboard View Button */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCustomer(u)}
+                          className="px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+                          title="View Customer Profile Dashboard & Order History"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>Profile & Orders</span>
+                        </button>
+
+                        {/* Role Demote / Promote Action */}
                         {isAdmin ? (
                           <button
                             type="button"
@@ -467,6 +500,19 @@ export function DashboardCustomersTab() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Admin Customer Profile & History Order Inspection Modal */}
+      {selectedCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-5xl bg-slate-50 dark:bg-[#0b101b] rounded-3xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 my-8 p-4 sm:p-7 max-h-[92vh] overflow-y-auto">
+            <DashboardCustomerAccount
+              targetCustomer={selectedCustomer}
+              isAdminView={true}
+              onClose={() => setSelectedCustomer(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
