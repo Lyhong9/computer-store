@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useCart } from "@/context/CartContext";
 import {
   ShoppingBag,
@@ -14,14 +15,18 @@ import {
   ShieldCheck,
   Lock,
   Zap,
+  UserCheck,
 } from "lucide-react";
 import { normalizeImageUrl, handleImageError } from "@/lib/utils";
+import { AuthRequiredModal } from "./AuthRequiredModal";
 
 interface CartDrawerProps {
   onProceedToCheckout: () => void;
 }
 
 export function CartDrawer({ onProceedToCheckout }: CartDrawerProps) {
+  const { isSignedIn } = useUser();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const {
     items,
     removeFromCart,
@@ -218,6 +223,21 @@ export function CartDrawer({ onProceedToCheckout }: CartDrawerProps) {
                 </div>
               </div>
 
+              {/* Account Required Notice for Unauthenticated Guests */}
+              {!isSignedIn && (
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-blue-950/30 to-purple-950/40 border border-cyan-500/25 flex items-start gap-2.5 shadow-inner">
+                  <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 mt-0.5">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-white leading-tight">Account Required to Order</p>
+                    <p className="text-[11px] text-slate-400 leading-snug mt-0.5">
+                      Please sign in or register before buying to secure warranty and track delivery.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="pt-0.5 flex gap-2.5">
                 <button
@@ -229,13 +249,31 @@ export function CartDrawer({ onProceedToCheckout }: CartDrawerProps) {
                 <button
                   id="cart-checkout-btn"
                   onClick={() => {
+                    if (!isSignedIn) {
+                      setShowAuthModal(true);
+                      return;
+                    }
                     setIsCartOpen(false);
                     onProceedToCheckout();
                   }}
-                  className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:via-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-cyan-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                  className={`flex-1 py-3 px-5 rounded-xl text-white text-xs sm:text-sm font-bold shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 group ${
+                    !isSignedIn
+                      ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:via-blue-500 hover:to-indigo-500 shadow-cyan-600/30 ring-1 ring-cyan-400/30"
+                      : "bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:via-blue-500 hover:to-indigo-500 shadow-cyan-500/25"
+                  }`}
                 >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  {!isSignedIn ? (
+                    <>
+                      <Lock className="w-4 h-4 text-cyan-200" />
+                      <span>Sign In to Checkout</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Proceed to Checkout</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -260,6 +298,14 @@ export function CartDrawer({ onProceedToCheckout }: CartDrawerProps) {
           )}
         </div>
       </div>
+
+      {/* Account Required Modal */}
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        redirectUrl="/"
+        cartItemCount={totalItems}
+      />
     </div>
   );
 }
