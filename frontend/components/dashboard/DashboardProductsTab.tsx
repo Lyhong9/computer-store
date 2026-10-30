@@ -32,6 +32,7 @@ import {
   useBrands,
   useCreateProduct,
   useUpdateProduct,
+  useRestockProduct,
   useDeleteProduct,
 } from "@/hooks/useStoreData";
 import { uploadsApi } from "@/services/api";
@@ -80,6 +81,7 @@ export function DashboardProductsTab({
 
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
+  const restockProductMutation = useRestockProduct();
   const deleteProductMutation = useDeleteProduct();
 
   // Filters
@@ -325,13 +327,7 @@ export function DashboardProductsTab({
 
   const handleBulkRestock = async (amount: number) => {
     for (const id of Array.from(selectedProductIds)) {
-      const p = products.find((item) => item.id === id);
-      if (p) {
-        await updateProductMutation.mutateAsync({
-          id,
-          data: { quantityOnHand: (p.quantityOnHand || 0) + amount },
-        });
-      }
+      await restockProductMutation.mutateAsync({ id, amount });
     }
     setSelectedProductIds(new Set());
   };
@@ -347,9 +343,9 @@ export function DashboardProductsTab({
   // Quick Restock Single Product
   const submitSingleRestock = async () => {
     if (!restockProduct) return;
-    await updateProductMutation.mutateAsync({
+    await restockProductMutation.mutateAsync({
       id: restockProduct.id,
-      data: { quantityOnHand: (restockProduct.quantityOnHand || 0) + restockAmount },
+      amount: restockAmount,
     });
     setRestockProduct(null);
   };
@@ -468,16 +464,23 @@ export function DashboardProductsTab({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50">
-              Products Catalog
-            </h1>
-            <Badge variant="secondary" className="font-bold text-xs">
-              {products.length} Products
-            </Badge>
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <PackagePlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50">
+                  Products Catalog
+                </h1>
+                <Badge variant="secondary" className="font-extrabold text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                  {products.length} SKUs
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                Manage hardware inventory, print warehouse barcode labels, and batch import/export CSV.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-            Manage hardware products, print warehouse barcode labels, and batch import/export CSV.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -486,7 +489,7 @@ export function DashboardProductsTab({
             variant="outline"
             size="sm"
             onClick={() => setIsImportModalOpen(true)}
-            className="text-xs h-9 gap-1.5 text-slate-700 dark:text-zinc-300"
+            className="text-xs h-9 px-3 gap-1.5 text-slate-700 dark:text-zinc-300 rounded-xl border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 shadow-2xs"
             title="Import products from CSV spreadsheet"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
@@ -498,7 +501,7 @@ export function DashboardProductsTab({
             variant="outline"
             size="sm"
             onClick={exportProductsCsv}
-            className="text-xs h-9 gap-1.5 text-slate-700 dark:text-zinc-300"
+            className="text-xs h-9 px-3 gap-1.5 text-slate-700 dark:text-zinc-300 rounded-xl border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 shadow-2xs"
             title="Export products to CSV"
           >
             <Download className="w-3.5 h-3.5 text-blue-600" />
@@ -510,17 +513,17 @@ export function DashboardProductsTab({
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="text-xs h-9 gap-1.5 text-slate-700 dark:text-zinc-300"
+            className="text-xs h-9 px-3 gap-1.5 text-slate-700 dark:text-zinc-300 rounded-xl border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 shadow-2xs"
             title="Refresh catalog from backend"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-blue-600" : ""}`} />
             <span className="hidden sm:inline">Sync</span>
           </Button>
 
           <Button
             onClick={openAddModal}
             size="sm"
-            className="h-9 px-4 text-xs font-bold gap-2 bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/25"
+            className="h-9 px-4 text-xs font-bold gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl shadow-md shadow-blue-600/25 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Product</span>
@@ -528,8 +531,51 @@ export function DashboardProductsTab({
         </div>
       </div>
 
+      {/* Quick Status Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setStockFilter("ALL");
+            setSelectedCategory("ALL");
+            setSelectedBrand("ALL");
+          }}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            stockFilter === "ALL" && selectedCategory === "ALL" && selectedBrand === "ALL"
+              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm"
+              : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-800 hover:bg-slate-50"
+          }`}
+        >
+          All Items ({products.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter("LOW_STOCK")}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            stockFilter === "LOW_STOCK"
+              ? "bg-rose-600 text-white shadow-sm"
+              : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-800 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
+          }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+          Low Stock ({products.filter((p) => (p.quantityOnHand || 0) <= 10).length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter("IN_STOCK")}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            stockFilter === "IN_STOCK"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-800 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
+          }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          In Stock ({products.filter((p) => (p.quantityOnHand || 0) > 10).length})
+        </button>
+      </div>
+
       {/* Filter and Search Bar */}
-      <Card className="p-4">
+      <Card className="p-4 rounded-2xl border-slate-200/80 dark:border-zinc-800 shadow-xs">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="flex-1 max-w-md">
@@ -539,7 +585,7 @@ export function DashboardProductsTab({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               icon={<Search className="w-4 h-4 text-slate-400" />}
-              className="h-9 text-xs"
+              className="h-9 text-xs rounded-xl"
             />
           </div>
 
@@ -591,13 +637,13 @@ export function DashboardProductsTab({
       </Card>
 
       {/* Products Table Card */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-2xl border-slate-200/80 dark:border-zinc-800 shadow-xs">
         {isLoading ? (
           <div className="p-6 space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="p-12 text-center">
@@ -612,8 +658,8 @@ export function DashboardProductsTab({
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40">
-                <TableHead className="w-10">
+              <TableRow className="border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/60">
+                <TableHead className="w-12 pl-4">
                   <button
                     type="button"
                     onClick={handleSelectAll}
@@ -627,14 +673,12 @@ export function DashboardProductsTab({
                     )}
                   </button>
                 </TableHead>
-                <TableHead className="w-[280px]">Product</TableHead>
-                <TableHead>SKU</TableHead>
+                <TableHead className="min-w-[280px]">Product Details</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Brand</TableHead>
-                <TableHead>Gallery</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Stock Status</TableHead>
+                <TableHead className="text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -651,14 +695,14 @@ export function DashboardProductsTab({
                 return (
                   <TableRow
                     key={p.id}
-                    className={`transition-colors ${
+                    className={`transition-colors border-b border-slate-100 dark:border-zinc-800/80 ${
                       isSelected
                         ? "bg-blue-50/40 dark:bg-blue-950/20"
                         : "hover:bg-slate-50/80 dark:hover:bg-zinc-800/40"
                     }`}
                   >
                     {/* Checkbox */}
-                    <TableCell className="w-10 py-3.5">
+                    <TableCell className="w-12 pl-4 py-3.5">
                       <button
                         type="button"
                         onClick={() => handleToggleSelect(p.id)}
@@ -672,125 +716,130 @@ export function DashboardProductsTab({
                       </button>
                     </TableCell>
 
-                    {/* Product Cell */}
+                    {/* Product Details (Image, Name, SKU, Featured Badge) */}
                     <TableCell className="py-3.5">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={normalizeImageUrl(imgList[0])}
-                          alt={p.name}
-                          onError={(e) => handleImageError(e)}
-                          className="w-12 h-12 rounded-xl object-cover bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shrink-0"
-                        />
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 p-1 shrink-0 flex items-center justify-center overflow-hidden group/img">
+                          <img
+                            src={normalizeImageUrl(imgList[0])}
+                            alt={p.name}
+                            onError={(e) => handleImageError(e)}
+                            className="w-full h-full object-contain group-hover/img:scale-110 transition-transform duration-300"
+                          />
+                        </div>
                         <div className="min-w-0">
-                          <span className="font-bold text-slate-900 dark:text-zinc-100 block text-xs truncate max-w-[200px]">
-                            {p.name}
-                          </span>
-                          {p.featured && (
-                            <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 uppercase">
-                              <Star className="w-2.5 h-2.5 fill-current" />
-                              Featured
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm truncate max-w-[240px] hover:text-blue-600 transition-colors">
+                              {p.name}
                             </span>
-                          )}
+                            {p.featured && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+                                <Star className="w-2.5 h-2.5 fill-current" />
+                                Featured
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="font-mono text-[11px] text-slate-400 dark:text-zinc-500">
+                              {p.sku}
+                            </span>
+                            {p.soldCount && (
+                              <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                                • {p.soldCount} sold
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
 
-                    {/* SKU */}
-                    <TableCell className="font-mono text-xs text-slate-500 dark:text-zinc-400">
-                      {p.sku}
-                    </TableCell>
-
                     {/* Category */}
-                    <TableCell className="text-xs text-slate-700 dark:text-zinc-300 font-medium">
-                      {p.categoryName || "Hardware"}
+                    <TableCell>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60">
+                        {p.categoryName || "Hardware"}
+                      </span>
                     </TableCell>
 
                     {/* Brand */}
-                    <TableCell className="text-xs text-slate-700 dark:text-zinc-300 font-medium">
+                    <TableCell className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       {p.brandName || "Premium"}
                     </TableCell>
 
-                    {/* Images Gallery Thumbnails */}
+                    {/* Price */}
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        {imgList.slice(0, 3).map((img, idx) => (
-                          <img
-                            key={idx}
-                            src={normalizeImageUrl(img)}
-                            alt={`${p.name} gallery ${idx + 1}`}
-                            onError={(e) => handleImageError(e)}
-                            className="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-zinc-700 hover:scale-125 transition-transform shadow-xs"
-                          />
-                        ))}
-                        {imgList.length > 3 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
-                            +{imgList.length - 3}
+                      <div className="flex flex-col">
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-zinc-50">
+                          {formatCurrency(p.price)}
+                        </span>
+                        {p.price <= 0.1 && (
+                          <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">
+                            KHQR Demo
                           </span>
                         )}
                       </div>
                     </TableCell>
 
-                    {/* Price */}
-                    <TableCell className="font-extrabold text-sm text-slate-900 dark:text-zinc-50">
-                      {formatCurrency(p.price)}
-                    </TableCell>
-
                     {/* Stock status badge */}
                     <TableCell>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
                           p.quantityOnHand <= 10
                             ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50"
                             : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50"
                         }`}
                       >
-                        {p.quantityOnHand} in stock
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.quantityOnHand <= 10 ? "bg-rose-500 animate-pulse" : "bg-emerald-500"}`} />
+                        {p.quantityOnHand} in stock {p.quantityOnHand <= 10 && "(Low)"}
                       </span>
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell className="text-right space-x-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setRestockProduct(p);
-                          setRestockAmount(10);
-                        }}
-                        title="Quick Restock Inventory"
-                        className="h-8 text-xs font-semibold px-2.5 text-slate-700 dark:text-zinc-300"
-                      >
-                        <PackagePlus className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                        <span className="hidden xl:inline">Restock</span>
-                      </Button>
+                    <TableCell className="text-right pr-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setRestockProduct(p);
+                            setRestockAmount(10);
+                          }}
+                          title="Restock Inventory"
+                          className="h-8 text-xs font-semibold px-2.5 rounded-xl border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 transition-colors"
+                        >
+                          <PackagePlus className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                          <span>Restock</span>
+                        </Button>
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setBarcodeProduct(p)}
-                        title="Print SKU Barcode Label"
-                        className="h-8 text-xs font-semibold px-2.5 text-slate-700 dark:text-zinc-300"
-                      >
-                        <BarcodeIcon className="w-3.5 h-3.5 text-purple-600" />
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setBarcodeProduct(p)}
+                          title="Print SKU Barcode"
+                          className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors"
+                        >
+                          <BarcodeIcon className="w-3.5 h-3.5" />
+                        </Button>
 
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEditModal(p)}
-                        className="h-8 text-xs font-semibold px-2.5"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEditModal(p)}
+                          title="Edit Product"
+                          className="h-8 w-8 p-0 rounded-xl border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
 
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setDeleteCandidate(p)}
-                        className="h-8 text-xs font-semibold px-2.5"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeleteCandidate(p)}
+                          title="Delete Product"
+                          className="h-8 w-8 p-0 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -1180,8 +1229,12 @@ export function DashboardProductsTab({
           <Button variant="outline" onClick={() => setRestockProduct(null)}>
             Cancel
           </Button>
-          <Button onClick={submitSingleRestock} className="bg-emerald-600 text-white font-bold">
-            Confirm Restock
+          <Button
+            onClick={submitSingleRestock}
+            disabled={restockProductMutation.isPending}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+          >
+            {restockProductMutation.isPending ? "Restocking..." : "Confirm Restock"}
           </Button>
         </DialogFooter>
       </Dialog>

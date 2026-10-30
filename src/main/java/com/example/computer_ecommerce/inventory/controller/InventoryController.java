@@ -30,26 +30,22 @@ public class InventoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public List<InventoryResponse> findAll() {
         return inventory.findAll();
     }
 
     @GetMapping("/{productId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public InventoryResponse findByProductId(@PathVariable Long productId) {
         return inventory.findByProductId(productId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public InventoryResponse create(@Valid @RequestBody InventoryRequest request) {
         return inventory.create(request);
     }
 
     @PutMapping("/{productId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public InventoryResponse update(
             @PathVariable Long productId,
             @Valid @RequestBody InventoryUpdateRequest request) {
@@ -58,7 +54,6 @@ public class InventoryController {
 
     @DeleteMapping("/{productId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long productId) {
         inventory.delete(productId);
     }

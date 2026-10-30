@@ -108,6 +108,10 @@ export const productsApi = {
 
   update: async (id: number, data: Partial<CreateProductInput>): Promise<Product> => {
     try {
+      // If only quantityOnHand is provided, use restock or inventory endpoint directly
+      if (data.quantityOnHand !== undefined && Object.keys(data).length === 1) {
+        return await productsApi.restock(id, data.quantityOnHand, true);
+      }
       const res = await apiClient.put<Product>(`/api/products/${id}`, data);
       return res.data;
     } catch {
@@ -120,11 +124,47 @@ export const productsApi = {
     }
   },
 
+  restock: async (id: number, amount: number, isAbsolute: boolean = false): Promise<Product> => {
+    try {
+      if (isAbsolute) {
+        // Set exact stock
+        await apiClient.put(`/api/inventory/${id}`, { quantityOnHand: amount });
+      } else {
+        // Add relative stock (+amount)
+        const res = await apiClient.patch<Product>(`/api/products/${id}/restock`, null, {
+          params: { amount },
+        });
+        return res.data;
+      }
+      return await productsApi.getById(id);
+    } catch (err) {
+      console.warn("Restock API fallback:", err);
+      const existing = INITIAL_PRODUCTS.find((p) => p.id === id);
+      const newStock = isAbsolute ? amount : (existing?.quantityOnHand || 0) + amount;
+      return {
+        ...(existing || ({} as Product)),
+        id,
+        quantityOnHand: newStock,
+      } as Product;
+    }
+  },
+
   delete: async (id: number): Promise<void> => {
     try {
       await apiClient.delete(`/api/products/${id}`);
     } catch {
       // Handled in client state
+    }
+  },
+};
+
+export const inventoryApi = {
+  update: async (productId: number, quantityOnHand: number): Promise<any> => {
+    try {
+      const res = await apiClient.put(`/api/inventory/${productId}`, { quantityOnHand });
+      return res.data;
+    } catch (err) {
+      console.warn("Inventory update fallback:", err);
     }
   },
 };

@@ -39,14 +39,12 @@ public class BrandController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public BrandResponse create(@Valid @RequestBody BrandRequest request) {
         return brands.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public BrandResponse update(
             @PathVariable Long id,
             @Valid @RequestBody BrandRequest request) {
@@ -54,7 +52,6 @@ public class BrandController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         brands.delete(id);

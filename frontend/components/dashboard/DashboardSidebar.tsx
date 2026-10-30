@@ -24,6 +24,7 @@ import {
   Calculator,
   User,
   EyeOff,
+  Cpu,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,28 +110,24 @@ export function DashboardSidebar({
             <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${
               isCustomer
                 ? "from-teal-600 via-emerald-600 to-teal-500 shadow-teal-500/25"
-                : "from-blue-600 via-indigo-600 to-blue-500 shadow-blue-500/25"
+                : "from-blue-600 via-indigo-600 to-cyan-500 shadow-blue-500/25"
             } flex items-center justify-center text-white font-black text-lg shadow-md shrink-0`}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+              <Cpu className="w-5 h-5 text-white" />
             </div>
             {!collapsed && (
               <div className="flex flex-col">
-                <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none">
-                  Shopeers
-                </span>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-base tracking-tight text-slate-900 dark:text-white leading-none">
+                    DIGITAX
+                  </span>
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-blue-600 text-white uppercase tracking-wider">
+                    PRO
+                  </span>
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
                   isCustomer
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-purple-600 dark:text-purple-400"
+                    ? "text-teal-600 dark:text-teal-400"
+                    : "text-slate-500 dark:text-slate-400"
                 }`}>
                   {isCustomer ? "Customer Profile" : "Admin Portal"}
                 </span>
@@ -139,7 +136,7 @@ export function DashboardSidebar({
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -385,34 +382,52 @@ export function DashboardSidebar({
           )
         )
       ) : (
-        /* Admin Upgrade Banner */
+        /* Admin System Health & POS Card */
         !collapsed ? (
           <div className="p-3">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 text-white relative overflow-hidden shadow-lg shadow-blue-500/20">
-              <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 rounded-full bg-white/10 blur-md pointer-events-none" />
-              <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center mb-2.5">
-                <Sparkles className="w-4 h-4 text-white" />
+            <div className="p-3.5 rounded-2xl bg-slate-900 text-white dark:bg-zinc-900/90 border border-slate-800 shadow-md">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  System Live Status
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Online
+                </span>
               </div>
-              <h4 className="font-extrabold text-sm leading-tight text-white">
-                Upgrade to Pro
-              </h4>
-              <p className="text-[11px] text-blue-100/90 mt-1 leading-snug">
-                Unlock AI analytics, auto-restocking & multi-store sync.
-              </p>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="mt-3 w-full h-8 text-xs font-bold bg-white text-blue-600 hover:bg-blue-50 shadow-xs"
+              <div className="text-[11px] space-y-1 text-slate-300">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Spring Boot</span>
+                  <span className="font-mono text-[10px] font-bold text-cyan-300">:8083 Active</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">PostgreSQL</span>
+                  <span className="font-mono text-[10px] font-bold text-slate-300">:5432 Live</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Payment POS</span>
+                  <span className="font-mono text-[10px] font-bold text-rose-400">Bakong KHQR</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveSection("pos")}
+                className="mt-3 w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                Upgrade Now
-              </Button>
+                <Calculator className="w-3.5 h-3.5" />
+                <span>Open POS Terminal</span>
+              </button>
             </div>
           </div>
         ) : (
           <div className="p-3 flex justify-center">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Sparkles className="w-4 h-4" />
-            </div>
+            <button
+              onClick={() => setActiveSection("pos")}
+              title="Open POS Terminal"
+              className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-md cursor-pointer transition-colors"
+            >
+              <Calculator className="w-4 h-4" />
+            </button>
           </div>
         )
       )}

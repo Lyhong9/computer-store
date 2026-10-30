@@ -168,18 +168,18 @@ export function DashboardBrandsTab() {
                 <div className="flex items-center gap-1.5">
                   <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => openEditModal(b)}
-                    className="h-8 text-xs font-semibold px-2.5"
+                    className="h-8 text-xs font-semibold px-2.5 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     <Edit2 className="w-3.5 h-3.5 mr-1" />
                     Edit
                   </Button>
                   <Button
                     size="sm"
-                    variant="destructive"
+                    variant="ghost"
                     onClick={() => setDeleteCandidate(b)}
-                    className="h-8 text-xs font-semibold px-2.5"
+                    className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>

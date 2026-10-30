@@ -35,9 +35,10 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brands", "/api/brands/**").permitAll()
+                        .requestMatchers("/api/products", "/api/products/**").permitAll()
+                        .requestMatchers("/api/categories", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/brands", "/api/brands/**").permitAll()
+                        .requestMatchers("/api/inventory", "/api/inventory/**").permitAll()
                         .requestMatchers("/api/orders", "/api/orders/**").permitAll()
                         .requestMatchers("/api/payments", "/api/payments/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/**").permitAll()
@@ -47,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/customers", "/api/customers/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/uploads/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

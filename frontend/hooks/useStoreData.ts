@@ -63,6 +63,21 @@ export function useUpdateProduct() {
   });
 }
 
+export function useRestockProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount }: { id: number; amount: number }) =>
+      productsApi.restock(id, amount),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Product[]>(QUERY_KEYS.products, (old) => {
+        if (!old) return [updated];
+        return old.map((p) => (p.id === updated.id ? { ...p, ...updated } : p));
+      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.products });
+    },
+  });
+}
+
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
   return useMutation({

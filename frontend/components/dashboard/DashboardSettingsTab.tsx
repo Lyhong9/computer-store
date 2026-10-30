@@ -39,7 +39,7 @@ interface DiscountCode {
 
 export function DashboardSettingsTab({ section }: { section: "settings" | "discounts" }) {
   const [saved, setSaved] = useState(false);
-  const [storeName, setStoreName] = useState("TechShop Hardware Ecommerce");
+  const [storeName, setStoreName] = useState("DIGITAX PRO — Hardware & Electronics");
   const [currency, setCurrency] = useState("USD ($)");
   const [taxRate, setTaxRate] = useState("8.5");
   const [freeShippingThreshold, setFreeShippingThreshold] = useState("1000");

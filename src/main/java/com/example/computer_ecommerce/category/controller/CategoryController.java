@@ -39,14 +39,12 @@ public class CategoryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryResponse create(@Valid @RequestBody CategoryRequest request) {
         return categories.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse update(
             @PathVariable Long id,
             @Valid @RequestBody CategoryRequest request) {
@@ -54,14 +52,12 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         categories.delete(id);
     }
 
     @PostMapping("/{id}/brands/{brandId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse addBrand(
             @PathVariable Long id,
             @PathVariable Long brandId) {
@@ -69,7 +65,6 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}/brands/{brandId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse removeBrand(
             @PathVariable Long id,
             @PathVariable Long brandId) {

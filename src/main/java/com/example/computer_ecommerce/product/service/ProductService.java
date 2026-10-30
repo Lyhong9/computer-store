@@ -126,6 +126,13 @@ public class ProductService {
         return mapper.toResponse(product);
     }
 
+    public ProductResponse restock(Long id, Integer amount) {
+        Product product = getProduct(id);
+        int current = product.getQuantityOnHand();
+        product.setQuantityOnHand(Math.max(0, current + (amount != null ? amount : 0)));
+        return mapper.toResponse(product);
+    }
+
     public void delete(Long id) {
         products.delete(getProduct(id));
     }
